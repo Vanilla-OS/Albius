@@ -1,0 +1,5 @@
+package ffi
+
+func Start() {
+
+}

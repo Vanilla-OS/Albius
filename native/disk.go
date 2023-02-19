@@ -1,14 +1,14 @@
 package native
 
 type Blockdevice struct {
-	Name, Majmin, Size, Type string
-	Rm, Ro                   bool
-	Mountpoints              []string
-	Children                 []Partition
+	Name, Majmin, Fssize, Pttype string
+	Rm, Ro                       bool
+	Mountpoints                  []string
+	Children                     []Partition
 }
 
 type Partition struct {
-	Name, Majmin, Size, Type string
-	Rm, Ro                   bool
-	Mountpoints              []string
+	Name, Majmin, Fssize, Fstype string
+	Rm, Ro                       bool
+	Mountpoints                  []string
 }

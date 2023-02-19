@@ -12,13 +12,10 @@ import (
 func BlockdeviceToCStruct(block native.Blockdevice) C.disk {
 	cPart := C.disk{}
 
-	// HACK: For some reason, the first time we convert using C.CString returns garbage
-	// _ = C.CString(part.Name)
-
 	cPart.name = C.CString(block.Name)
 	cPart.majmin = C.CString(block.Majmin)
-	cPart.size = C.CString(block.Size)
-	cPart._type = C.CString(block.Type)
+	cPart.fssize = C.CString(block.Fssize)
+	cPart.pttype = C.CString(block.Pttype)
 	cPart.rm = BoolToCInt(block.Rm)
 	cPart.ro = BoolToCInt(block.Ro)
 	cPart.mountpoints, cPart.mountpoints_size = StringListToCArray(block.Mountpoints)
@@ -35,8 +32,8 @@ func PartitionToCStruct(part native.Partition) C.partition {
 
 	cPart.name = C.CString(part.Name)
 	cPart.majmin = C.CString(part.Majmin)
-	cPart.size = C.CString(part.Size)
-	cPart._type = C.CString(part.Type)
+	cPart.fssize = C.CString(part.Fssize)
+	cPart.fstype = C.CString(part.Fstype)
 	cPart.rm = BoolToCInt(part.Rm)
 	cPart.ro = BoolToCInt(part.Ro)
 	cPart.mountpoints, cPart.mountpoints_size = StringListToCArray(part.Mountpoints)

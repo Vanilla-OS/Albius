@@ -8,8 +8,8 @@ typedef struct _partition {
     char *name;
     char *majmin;
     int rm;
-    char *size;
-    char *type;
+    char *fssize;
+    char *fstype;
     int ro;
     char **mountpoints;
     size_t mountpoints_size;
@@ -18,8 +18,8 @@ typedef struct _partition {
 typedef struct _disk {
     char *name;
     char *majmin;
-    char *size;
-    char *type;
+    char *fssize;
+    char *pttype;
     int rm;
     int ro;
     char **mountpoints;

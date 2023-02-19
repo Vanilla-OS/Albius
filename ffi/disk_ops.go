@@ -5,7 +5,7 @@ package ffi
    #include "ffi_types.h"
 
    static void _ffi_println(char *s) {
-       printf("%s", s);
+       printf("%s\n", s);
    }
 */
 import "C"
@@ -16,7 +16,6 @@ import (
 	"github.com/vanilla-os/albius/native"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 type LocateDiskOutput struct {
@@ -34,14 +33,15 @@ func LocateDisk(diskname *C.char) C.disk {
 		os.Exit(1)
 	}
 
-	dec := json.NewDecoder(strings.NewReader(string(output)))
-
 	var devices LocateDiskOutput
-	err = dec.Decode(&devices)
-	if err != nil {
-		C._ffi_println(C.CString("Failed to decode json from output"))
-		os.Exit(1)
-	}
+    err = json.Unmarshal(output, &devices)
+	// dec := json.NewDecoder(strings.NewReader(string(output)))
+
+	// err = dec.Decode(&devices)
+	// if err != nil {
+	// 	C._ffi_println(C.CString("Failed to decode json from output"))
+	// 	os.Exit(1)
+	// }
 
 	if len(devices.Blockdevices) == 1 {
 		return BlockdeviceToCStruct(devices.Blockdevices[0])

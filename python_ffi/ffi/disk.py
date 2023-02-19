@@ -8,8 +8,8 @@ class Partition(Structure):
         ("name", c_char_p),
         ("majmin", c_char_p),
         ("rm", c_int),
-        ("size", c_char_p),
-        ("type", c_char_p),
+        ("fssize", c_char_p),
+        ("fstype", c_char_p),
         ("ro", c_int),
         ("mountpoints", POINTER(c_char_p)),
         ("mountpoints_size", c_size_t),
@@ -20,8 +20,8 @@ class Partition(Structure):
 Partition: {{ \
 Name: {self.name}, \
 Maj:Min: {self.majmin}, \
-Size: {self.size}, \
-Type: {self.type}, \
+Size: {self.fssize}, \
+Type: {self.fstype}, \
 RM: {'True' if self.rm == 1 else 'False'}, \
 RO: {'True' if self.ro == 1 else 'False'}, \
 Mountpoints: {__array_repr__(self.mountpoints, self.mountpoints_size)} }}"
@@ -32,8 +32,8 @@ class Disk(Structure):
     _fields_ = [
         ("name", c_char_p),
         ("majmin", c_char_p),
-        ("size", c_char_p),
-        ("type", c_char_p),
+        ("fssize", c_char_p),
+        ("pttype", c_char_p),
         ("rm", c_int),
         ("ro", c_int),
         ("mountpoints", POINTER(c_char_p)),
@@ -47,8 +47,8 @@ class Disk(Structure):
 Disk: {{ \
 Name: {self.name}, \
 Maj:Min: {self.majmin}, \
-Size: {self.size}, \
-Type: {self.type}, \
+Size: {self.fssize}, \
+Type: {self.pttype}, \
 RM: {'True' if self.rm == 1 else 'False'}, \
 RO: {'True' if self.ro == 1 else 'False'}, \
 Mountpoints: {__array_repr__(self.mountpoints, self.mountpoints_size)}, \

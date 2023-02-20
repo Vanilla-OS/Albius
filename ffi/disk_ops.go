@@ -56,3 +56,31 @@ func Mount(part *C.partition, location *C.char) {
 		os.Exit(1)
 	}
 }
+
+//export UmountPartition
+func UmountPartition(part *C.partition) {
+	umountCmd := "umount %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, "/dev/"+C.GoString(part.name)))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		C._ffi_println(C.CString("Failed to run command"))
+		os.Exit(1)
+	}
+}
+
+//export UmountDirectory
+func UmountDirectory(dir *C.char) {
+	umountCmd := "umount %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, C.GoString(dir)))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		C._ffi_println(C.CString("Failed to run command"))
+		os.Exit(1)
+	}
+}

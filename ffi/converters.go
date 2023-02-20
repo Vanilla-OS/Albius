@@ -9,19 +9,19 @@ import (
 	"unsafe"
 )
 
-func BlockdeviceToCStruct(block native.Blockdevice) C.disk {
-	cPart := C.disk{}
+func BlockdeviceToCStruct(block native.Blockdevice) *C.disk {
+	cPart := C.malloc(C.size_t(unsafe.Sizeof(C.sizeof_disk)))
 
-	cPart.name = C.CString(block.Name)
-	cPart.majmin = C.CString(block.Majmin)
-	cPart.fssize = C.CString(block.Fssize)
-	cPart.pttype = C.CString(block.Pttype)
-	cPart.rm = BoolToCInt(block.Rm)
-	cPart.ro = BoolToCInt(block.Ro)
-	cPart.mountpoints, cPart.mountpoints_size = StringListToCArray(block.Mountpoints)
-	cPart.partitions, cPart.partitions_size = PartitionSliceToCArray(block.Children)
+	(*C.disk)(cPart).name = C.CString(block.Name)
+	(*C.disk)(cPart).majmin = C.CString(block.Majmin)
+	(*C.disk)(cPart).fssize = C.CString(block.Fssize)
+	(*C.disk)(cPart).pttype = C.CString(block.Pttype)
+	(*C.disk)(cPart).rm = BoolToCInt(block.Rm)
+	(*C.disk)(cPart).ro = BoolToCInt(block.Ro)
+	(*C.disk)(cPart).mountpoints, (*C.disk)(cPart).mountpoints_size = StringListToCArray(block.Mountpoints)
+	(*C.disk)(cPart).partitions, (*C.disk)(cPart).partitions_size = PartitionSliceToCArray(block.Children)
 
-	return cPart
+	return (*C.disk)(cPart)
 }
 
 func PartitionToCStruct(part native.Partition) C.partition {

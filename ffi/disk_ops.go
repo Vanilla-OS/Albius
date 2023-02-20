@@ -25,7 +25,7 @@ type LocateDiskOutput struct {
 var FindPartitionCmd = "lsblk -nJ %s | sed 's/maj:min/majmin/g' | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g'"
 
 //export LocateDisk
-func LocateDisk(diskname *C.char) C.disk {
+func LocateDisk(diskname *C.char) *C.disk {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(FindPartitionCmd, C.GoString(diskname)))
 	output, err := cmd.Output()
 	if err != nil {
@@ -34,18 +34,11 @@ func LocateDisk(diskname *C.char) C.disk {
 	}
 
 	var devices LocateDiskOutput
-    err = json.Unmarshal(output, &devices)
-	// dec := json.NewDecoder(strings.NewReader(string(output)))
-
-	// err = dec.Decode(&devices)
-	// if err != nil {
-	// 	C._ffi_println(C.CString("Failed to decode json from output"))
-	// 	os.Exit(1)
-	// }
+    json.Unmarshal(output, &devices)
 
 	if len(devices.Blockdevices) == 1 {
 		return BlockdeviceToCStruct(devices.Blockdevices[0])
 	}
 
-	return C.disk{}
+	return nil
 }

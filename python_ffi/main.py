@@ -5,4 +5,4 @@ exports.setup_exports()
 
 diskname = create_string_buffer(b"/dev/sda")
 diskinfo = __lib__.LocateDisk(diskname)
-print(diskinfo)
+print(diskinfo.contents)

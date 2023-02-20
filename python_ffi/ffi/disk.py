@@ -27,6 +27,10 @@ RO: {'True' if self.ro == 1 else 'False'}, \
 Mountpoints: {__array_repr__(self.mountpoints, self.mountpoints_size)} }}"
         return fmtstr
 
+    def mountpoint_iter(self):
+        for i in range(self.mountpoints_size):
+            yield self.mountpoints[i]
+
 
 class Disk(Structure):
     _fields_ = [
@@ -54,3 +58,11 @@ RO: {'True' if self.ro == 1 else 'False'}, \
 Mountpoints: {__array_repr__(self.mountpoints, self.mountpoints_size)}, \
 Partitions: {__array_repr__(self.partitions, self.partitions_size)} }}"
         return fmtstr
+
+    def mountpoint_iter(self):
+        for i in range(self.mountpoints_size):
+            yield self.mountpoints[i]
+
+    def partition_iter(self):
+        for i in range(self.partitions_size):
+            yield self.partitions[i]

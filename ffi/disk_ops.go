@@ -22,11 +22,11 @@ type LocateDiskOutput struct {
 	Blockdevices []native.Blockdevice
 }
 
-var FindPartitionCmd = "lsblk -nJ %s | sed 's/maj:min/majmin/g' | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g'"
-
 //export LocateDisk
 func LocateDisk(diskname *C.char) *C.disk {
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(FindPartitionCmd, C.GoString(diskname)))
+	findPartitionCmd := "lsblk -nJ %s | sed 's/maj:min/majmin/g' | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g'"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, C.GoString(diskname)))
 	output, err := cmd.Output()
 	if err != nil {
 		C._ffi_println(C.CString("Failed to run command"))
@@ -34,11 +34,25 @@ func LocateDisk(diskname *C.char) *C.disk {
 	}
 
 	var devices LocateDiskOutput
-    json.Unmarshal(output, &devices)
+	json.Unmarshal(output, &devices)
 
 	if len(devices.Blockdevices) == 1 {
 		return BlockdeviceToCStruct(devices.Blockdevices[0])
 	}
 
 	return nil
+}
+
+//export Mount
+func Mount(part *C.partition, location *C.char) {
+	mountCmd := "mount -m %s %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(mountCmd, "/dev/"+C.GoString(part.name), C.GoString(location)))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		C._ffi_println(C.CString("Failed to run command"))
+		os.Exit(1)
+	}
 }

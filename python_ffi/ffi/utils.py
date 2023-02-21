@@ -1,7 +1,7 @@
-def __array_repr__(arr, arr_size):
+def __array_repr__(arr):
     fmtstr = "[ "
-    for i in range(arr_size):
-        fmtstr += arr[i].__repr__()
+    for elem in arr:
+        fmtstr += elem.__repr__()
         fmtstr += ", "
 
     return fmtstr[:-2] + " ]"

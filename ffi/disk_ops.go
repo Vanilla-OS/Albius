@@ -13,41 +13,46 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/vanilla-os/albius/native"
 	"os"
 	"os/exec"
+	"strings"
+
+	"github.com/vanilla-os/albius/native"
 )
 
 type LocateDiskOutput struct {
-	Blockdevices []native.Blockdevice
+	Disk native.Disk
 }
 
 //export LocateDisk
 func LocateDisk(diskname *C.char) *C.disk {
-	findPartitionCmd := "lsblk -nJ %s | sed 's/maj:min/majmin/g' | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g'"
+	findPartitionCmd := "parted -sj %s print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, C.GoString(diskname)))
 	output, err := cmd.Output()
 	if err != nil {
-		C._ffi_println(C.CString("Failed to run command"))
+		C._ffi_println(C.CString("Failed to run command."))
 		os.Exit(1)
 	}
 
-	var devices LocateDiskOutput
-	json.Unmarshal(output, &devices)
-
-	if len(devices.Blockdevices) == 1 {
-		return BlockdeviceToCStruct(devices.Blockdevices[0])
+	var decoded LocateDiskOutput
+	dec := json.NewDecoder(strings.NewReader(string(output)))
+	err = dec.Decode(&decoded)
+	if err != nil {
+		C._ffi_println(C.CString("Failed to retrieve partition."))
+		return nil
 	}
 
-	return nil
+	device := decoded.Disk
+
+	return DiskToCStruct(device)
 }
 
 //export Mount
 func Mount(part *C.partition, location *C.char) {
 	mountCmd := "mount -m %s %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(mountCmd, "/dev/"+C.GoString(part.name), C.GoString(location)))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(mountCmd, C.GoString(part._path), C.GoString(location)))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -61,7 +66,7 @@ func Mount(part *C.partition, location *C.char) {
 func UmountPartition(part *C.partition) {
 	umountCmd := "umount %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, "/dev/"+C.GoString(part.name)))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, C.GoString(part._path)))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

@@ -1,14 +1,12 @@
 package native
 
-type Blockdevice struct {
-	Name, Majmin, Fssize, Pttype string
-	Rm, Ro                       bool
-	Mountpoints                  []string
-	Children                     []Partition
+type Disk struct {
+	Path, Size, Model, Transport, Label                                   string
+	LogicalSectorSize, PhysicalSectorSize, MaxPartitions, PartitionsCount int
+	Partitions                                                            []Partition
 }
 
 type Partition struct {
-	Name, Majmin, Fssize, Fstype string
-	Rm, Ro                       bool
-	Mountpoints                  []string
+	Number                             int
+	Start, End, Size, Type, Filesystem string
 }

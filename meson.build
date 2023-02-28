@@ -5,3 +5,4 @@ project(
 )
 
 subdir('albius')
+subdir('python_bindings')

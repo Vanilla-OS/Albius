@@ -16,8 +16,7 @@ albius_env = environment()
 albius_env.set('CGO_CFLAGS', '-Ilib')
 albius_env.set('CGO_LDFLAGS', '-L' + static_lib_dir + ' -lalbius_internal')
 
-albius = custom_target(
-  'albius',
+albius = custom_target('albius',
   output: 'albius.so',
   env: albius_env,
   input: go_files,

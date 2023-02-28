@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_char_p
+from ctypes import POINTER, c_char_p, c_int
 
 from ffi import __lib__
 
@@ -21,3 +21,7 @@ def setup_exports():
     # UmountDirectory
     __lib__.UmountDirectory.argtypes = [c_char_p]
     __lib__.UmountDirectory.restype = None
+
+    # Unsquashfs
+    __lib__.Unsquashfs.argtypes = [c_char_p, c_char_p, c_int]
+    __lib__.Unsquashfs.restype = None

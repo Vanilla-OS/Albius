@@ -1,12 +1,8 @@
 package ffi
 
-// #cgo CFLAGS: -I..
 /*
-   #include "ffi_types.h"
-
-   static void _ffi_println(char *s) {
-       printf("%s\n", s);
-   }
+   #include "lib/ffi_types.h"
+   #include "lib/ffi_funcs.h"
 */
 import "C"
 
@@ -50,6 +46,7 @@ func LocateDisk(diskname *C.char) *C.disk {
 
 //export Mount
 func Mount(part *C.partition, location *C.char) {
+	// TODO: Handle crypto_LUKS filesystems
 	mountCmd := "mount -m %s %s"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(mountCmd, C.GoString(part._path), C.GoString(location)))

@@ -1,7 +1,12 @@
 package ffi
 
 import "C"
-import "unsafe"
+
+import (
+	"os"
+	"os/exec"
+	"unsafe"
+)
 
 func BoolToCInt(boolval bool) C.int {
 	if boolval {
@@ -20,4 +25,11 @@ func StringListToCArray(stringList []string) (**C.char, C.size_t) {
 	}
 
 	return (**C.char)(cArray), C.size_t(len(stringList))
+}
+
+func RunCommand(command string) error {
+	cmd := exec.Command("sh", "-c", command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

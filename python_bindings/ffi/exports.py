@@ -25,3 +25,7 @@ def setup_exports():
     # Unsquashfs
     __lib__.Unsquashfs.argtypes = [c_char_p, c_char_p, c_int]
     __lib__.Unsquashfs.restype = None
+
+    # NewPartition
+    __lib__.NewPartition.argtypes = [POINTER(Disk), c_char_p, c_int, c_int]
+    __lib__.NewPartition.restype = None

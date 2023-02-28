@@ -49,10 +49,7 @@ func Mount(part *C.partition, location *C.char) {
 	// TODO: Handle crypto_LUKS filesystems
 	mountCmd := "mount -m %s %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(mountCmd, C.GoString(part._path), C.GoString(location)))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := RunCommand(fmt.Sprintf(mountCmd, C.GoString(part._path), C.GoString(location)))
 	if err != nil {
 		C._ffi_println(C.CString("Failed to run command"))
 		os.Exit(1)
@@ -63,10 +60,7 @@ func Mount(part *C.partition, location *C.char) {
 func UmountPartition(part *C.partition) {
 	umountCmd := "umount %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, C.GoString(part._path)))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := RunCommand(fmt.Sprintf(umountCmd, C.GoString(part._path)))
 	if err != nil {
 		C._ffi_println(C.CString("Failed to run command"))
 		os.Exit(1)
@@ -77,12 +71,11 @@ func UmountPartition(part *C.partition) {
 func UmountDirectory(dir *C.char) {
 	umountCmd := "umount %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(umountCmd, C.GoString(dir)))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := RunCommand(fmt.Sprintf(umountCmd, C.GoString(dir)))
 	if err != nil {
 		C._ffi_println(C.CString("Failed to run command"))
 		os.Exit(1)
 	}
 }
+
+// TODO: Format disk, add label

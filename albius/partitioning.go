@@ -33,6 +33,7 @@ func NewPartition(target *C.disk, name, fsType *C.char, start, end C.int) {
 	}
 }
 
+//export RemovePartition
 func RemovePartition(target *C.partition) {
 	rmPartCmd := "parted -s %s rm %s"
 
@@ -49,6 +50,7 @@ func RemovePartition(target *C.partition) {
 	}
 }
 
+//export ResizePartition
 func ResizePartition(target *C.partition, newEnd C.int) {
 	resizePartCmd := "parted -s %s resizepart %s %d"
 

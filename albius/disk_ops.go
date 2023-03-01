@@ -22,12 +22,11 @@ type LocateDiskOutput struct {
 
 //export LocateDisk
 func LocateDisk(diskname *C.char) *C.disk {
-	findPartitionCmd := "parted -sj %s print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
-
+	findPartitionCmd := "parted -sj %s unit B print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, C.GoString(diskname)))
 	output, err := cmd.Output()
 	if err != nil {
-		C._ffi_println(C.CString("Failed to run command."))
+		C._ffi_println(C.CString("Failed to list disk."))
 		os.Exit(1)
 	}
 
@@ -36,7 +35,7 @@ func LocateDisk(diskname *C.char) *C.disk {
 	err = dec.Decode(&decoded)
 	if err != nil {
 		C._ffi_println(C.CString("Failed to retrieve partition."))
-		return nil
+		os.Exit(1)
 	}
 
 	device := decoded.Disk

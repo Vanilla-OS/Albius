@@ -35,16 +35,16 @@ Filesystem: {self.filesystem} }}"
         return self._number
 
     @property
-    def start(self) -> str:
-        return self._start.decode()
+    def start(self) -> int:
+        return int(self._start.decode()[:-1])
 
     @property
-    def end(self) -> str:
-        return self._end.decode()
+    def end(self) -> int:
+        return int(self._end.decode()[:-1])
 
     @property
-    def size(self) -> str:
-        return self._size.decode()
+    def size(self) -> int:
+        return int(self._size.decode()[:-1])
 
     @property
     def type(self) -> str:
@@ -88,8 +88,8 @@ Partitions: {__array_repr__(self.partitions)} }}"
         return self._path.decode()
 
     @property
-    def size(self) -> str:
-        return self._size.decode()
+    def size(self) -> int:
+        return int(self._size.decode()[:-1])
 
     @property
     def model(self) -> str:

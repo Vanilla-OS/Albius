@@ -77,4 +77,14 @@ func UmountDirectory(dir *C.char) {
 	}
 }
 
-// TODO: Format disk, add label
+//export LabelDisk
+func LabelDisk(target *C.disk, label *C.char) {
+	labelDiskCmd := "parted -s %s mklabel %s"
+
+	err := RunCommand(fmt.Sprintf(labelDiskCmd, C.GoString(target._path), C.GoString(label)))
+	if err != nil {
+		errorMsg := fmt.Sprintf("Failed to label disk: %s", err)
+		C._ffi_println(C.CString(errorMsg))
+		os.Exit(1)
+	}
+}

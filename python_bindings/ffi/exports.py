@@ -23,6 +23,10 @@ def setup_exports():
     __lib__.UmountDirectory.argtypes = [c_char_p]
     __lib__.UmountDirectory.restype = None
 
+    # LabelDisk
+    __lib__.LabelDisk.argtypes = [POINTER(Disk), c_char_p]
+    __lib__.LabelDisk.restype = None
+
     # --------------------------file_ops---------------------------
     # Unsquashfs
     __lib__.Unsquashfs.argtypes = [c_char_p, c_char_p, c_int]
@@ -40,3 +44,11 @@ def setup_exports():
     # ResizePartition
     __lib__.ResizePartition.argtypes = [POINTER(Partition), c_int]
     __lib__.ResizePartition.restype = None
+
+    # NamePartition
+    __lib__.NamePartition.argtypes = [POINTER(Partition), c_char_p]
+    __lib__.NamePartition.restype = None
+
+    # SetPartitionFlag
+    __lib__.SetPartitionFlag.argtypes = [POINTER(Partition), c_char_p, c_int]
+    __lib__.SetPartitionFlag.restype = None

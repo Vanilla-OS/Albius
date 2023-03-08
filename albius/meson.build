@@ -13,7 +13,7 @@ go_files = [
 static_lib_dir = meson.build_root() + '/albius/lib'
 
 albius_env = environment()
-albius_env.set('CGO_CFLAGS', '-Ilib')
+albius_env.set('CGO_CFLAGS', '-Ilib -Wall -g3')
 albius_env.set('CGO_LDFLAGS', '-L' + static_lib_dir + ' -lalbius_internal')
 
 albius = custom_target('albius',

@@ -1,11 +1,13 @@
 from ctypes import POINTER, c_char_p, c_int
 
-from ffi import __lib__
+from .utils import load_library
 
 from .disk import Disk, Partition
 
 
 def setup_exports():
+    __lib__ = load_library()
+
     # --------------------------disk_ops---------------------------
     # LocateDisk
     __lib__.LocateDisk.argtypes = [c_char_p]
@@ -26,6 +28,10 @@ def setup_exports():
     # LabelDisk
     __lib__.LabelDisk.argtypes = [POINTER(Disk), c_char_p]
     __lib__.LabelDisk.restype = None
+
+    # FreeDisk
+    __lib__.FreeDisk.argtypes = [POINTER(Disk)]
+    __lib__.FreeDisk.restype = None
 
     # --------------------------file_ops---------------------------
     # Unsquashfs

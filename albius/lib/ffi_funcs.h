@@ -7,5 +7,6 @@
 
 void _ffi_println(char *s);
 void add_path_to_partitions(partition *parts, int count, char *path);
+void free_disk(disk *d);
 
 #endif

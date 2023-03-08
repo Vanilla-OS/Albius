@@ -29,10 +29,6 @@ def setup_exports():
     __lib__.LabelDisk.argtypes = [POINTER(Disk), c_char_p]
     __lib__.LabelDisk.restype = None
 
-    # FreeDisk
-    __lib__.FreeDisk.argtypes = [POINTER(Disk)]
-    __lib__.FreeDisk.restype = None
-
     # --------------------------file_ops---------------------------
     # Unsquashfs
     __lib__.Unsquashfs.argtypes = [c_char_p, c_char_p, c_int]

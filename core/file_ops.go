@@ -6,7 +6,6 @@ import (
 	"os/exec"
 )
 
-//export Unsquashfs
 func Unsquashfs(filesystem, destination string, force bool) error {
 	unsquashfsCmd := "unsquashfs%s -d %s"
 

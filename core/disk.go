@@ -33,14 +33,14 @@ func (disk *Disk) AvailableSectors() []Sector {
 	for i, part := range disk.Partitions {
 		endInt, err := strconv.Atoi(part.End[:len(part.End)-1])
 		if err != nil {
-			panic("Failed to retireve end position of partition")
+			panic("Failed to retrieve end position of partition")
 		}
 
 		if i < len(disk.Partitions)-1 {
 			nextStart := disk.Partitions[i+1].Start
 			nextStartInt, err := strconv.Atoi(part.Start[:len(nextStart)-1])
 			if err != nil {
-				panic("Failed to retireve end position of next partition")
+				panic("Failed to retrieve end position of next partition")
 			}
 			sectors = append(sectors, Sector{latestEnd + 1, nextStartInt - 1})
 			latestEnd = endInt + disk.PhysicalSectorSize
@@ -51,11 +51,11 @@ func (disk *Disk) AvailableSectors() []Sector {
 	lastPartitionEndStr := disk.Partitions[len(disk.Partitions)-1].End
 	lastPartitionEnd, err := strconv.Atoi(lastPartitionEndStr)
 	if err != nil {
-		panic("Failed to retireve end position of last partition")
+		panic("Failed to retrieve end position of last partition")
 	}
 	diskEnd, err := strconv.Atoi(disk.Size)
 	if err != nil {
-		panic("Failed to retireve disk end")
+		panic("Failed to retrieve disk end")
 	}
 	if lastPartitionEnd < diskEnd {
 		sectors = append(sectors, Sector{lastPartitionEnd, diskEnd})

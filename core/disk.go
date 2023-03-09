@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -76,9 +75,8 @@ func LocateDisk(diskname string) (*Disk, error) {
 		return nil, fmt.Errorf("Failed to list disk: %s", err)
 	}
 
-	var decoded LocateDiskOutput
-	dec := json.NewDecoder(strings.NewReader(string(output)))
-	err = dec.Decode(&decoded)
+	var decoded *LocateDiskOutput
+	err = json.Unmarshal(output, &decoded)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve partition: %s", err)
 	}

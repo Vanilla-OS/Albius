@@ -1,5 +1,0 @@
-package ffi
-
-func Start() {
-
-}

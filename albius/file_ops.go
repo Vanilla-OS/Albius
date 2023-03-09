@@ -1,10 +1,4 @@
-package ffi
-
-/*
-   #include "lib/ffi_types.h"
-   #include "lib/ffi_funcs.h"
-*/
-import "C"
+package albius
 
 import (
 	"fmt"
@@ -13,22 +7,23 @@ import (
 )
 
 //export Unsquashfs
-func Unsquashfs(filesystem, destination *C.char, force C.int) {
+func Unsquashfs(filesystem, destination string, force bool) error {
 	unsquashfsCmd := "unsquashfs%s -d %s"
 
 	var forceFlag string
-	if force == 1 {
+	if force {
 		forceFlag = " -f"
 	} else {
 		forceFlag = ""
 	}
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(unsquashfsCmd, forceFlag, C.GoString(destination)))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(unsquashfsCmd, forceFlag, destination))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		C._ffi_println(C.CString("Failed to run command"))
-		os.Exit(1)
+        return fmt.Errorf("Failed to run unsquashfs: %s", err)
 	}
+
+    return nil
 }

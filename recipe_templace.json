@@ -1,0 +1,85 @@
+{
+	"setup": {
+		"steps": [
+			{
+				"disk": "/dev/sda",
+				"operation": "label",
+				"params": [
+					"gpt"
+				]
+			},
+			{
+				"disk": "/dev/sda",
+				"operation": "mkpart",
+				"params": [
+					"boot",
+					"ext4",
+					1,
+					1024
+				]
+			},
+			{
+				"disk": "/dev/sda",
+				"operation": "mkpart",
+				"params": [
+					"efi",
+					"ext4",
+					1025,
+					1527
+				]
+			},
+			{
+				"disk": "/dev/sda",
+				"operation": "mkpart",
+				"params": [
+					"a",
+					"btrfs",
+					1528,
+					13528
+				]
+			},
+			{
+				"disk": "/dev/sda",
+				"operation": "mkpart",
+				"params": [
+					"b",
+					"btrfs",
+					13529,
+					25529
+				]
+			},
+			{
+				"disk": "/dev/sda",
+				"operation": "mkpart",
+				"params": [
+					"home",
+					"btrfs",
+					25530,
+					-1
+				]
+			}
+		]
+	},
+	"mountpoints": [
+		{
+			"partition": "/dev/sda3",
+			"target": "/mnt/a"
+		},
+		{
+			"partition": "/dev/sda4",
+			"target": "/mnt/b"
+		},
+		{
+			"partition": "/dev/sda1",
+			"target": "/mnt/a/boot"
+		},
+		{
+			"partition": "/dev/sda2",
+			"target": "/mnt/a/boot/efi"
+		},
+		{
+			"partition": "/dev/sda5",
+			"target": "/mnt/a/home"
+		}
+	]
+}

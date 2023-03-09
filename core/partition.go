@@ -16,10 +16,10 @@ func (part *Partition) Mount(location string) error {
 
 	err := RunCommand(fmt.Sprintf(mountCmd, part.Path, location))
 	if err != nil {
-        return fmt.Errorf("Failed to run mount command: %s", err)
+		return fmt.Errorf("Failed to run mount command: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (part *Partition) UmountPartition() error {
@@ -27,10 +27,10 @@ func (part *Partition) UmountPartition() error {
 
 	err := RunCommand(fmt.Sprintf(umountCmd, part.Path))
 	if err != nil {
-        return fmt.Errorf("Failed to run umount command: %s", err)
+		return fmt.Errorf("Failed to run umount command: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func UmountDirectory(dir string) error {
@@ -38,10 +38,10 @@ func UmountDirectory(dir string) error {
 
 	err := RunCommand(fmt.Sprintf(umountCmd, dir))
 	if err != nil {
-        return fmt.Errorf("Failed to run umount command: %s", err)
+		return fmt.Errorf("Failed to run umount command: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (target *Partition) RemovePartition() error {
@@ -54,10 +54,10 @@ func (target *Partition) RemovePartition() error {
 
 	err := RunCommand(fmt.Sprintf(rmPartCmd, disk, part))
 	if err != nil {
-        return fmt.Errorf("Failed to remove partition: %s", err)
+		return fmt.Errorf("Failed to remove partition: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (target *Partition) ResizePartition(newEnd int) error {
@@ -70,10 +70,10 @@ func (target *Partition) ResizePartition(newEnd int) error {
 
 	err := RunCommand(fmt.Sprintf(resizePartCmd, disk, part, newEnd))
 	if err != nil {
-        return fmt.Errorf("Failed to resize partition: %s", err)
+		return fmt.Errorf("Failed to resize partition: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (target *Partition) NamePartition(name string) error {
@@ -86,10 +86,10 @@ func (target *Partition) NamePartition(name string) error {
 
 	err := RunCommand(fmt.Sprintf(namePartCmd, disk, part, name))
 	if err != nil {
-        return fmt.Errorf("Failed to name partition: %s", err)
+		return fmt.Errorf("Failed to name partition: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (target *Partition) SetPartitionFlag(flag string, state int) error {
@@ -101,7 +101,7 @@ func (target *Partition) SetPartitionFlag(flag string, state int) error {
 	} else if state == 1 {
 		stateStr = "on"
 	} else {
-        return fmt.Errorf("Invalid flag state: %d", state)
+		return fmt.Errorf("Invalid flag state: %d", state)
 	}
 
 	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
@@ -111,8 +111,8 @@ func (target *Partition) SetPartitionFlag(flag string, state int) error {
 
 	err := RunCommand(fmt.Sprintf(setPartCmd, disk, part, flag, stateStr))
 	if err != nil {
-        return fmt.Errorf("Failed to name partition: %s", err)
+		return fmt.Errorf("Failed to name partition: %s", err)
 	}
 
-    return nil
+	return nil
 }

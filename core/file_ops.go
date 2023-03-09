@@ -22,8 +22,8 @@ func Unsquashfs(filesystem, destination string, force bool) error {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-        return fmt.Errorf("Failed to run unsquashfs: %s", err)
+		return fmt.Errorf("Failed to run unsquashfs: %s", err)
 	}
 
-    return nil
+	return nil
 }

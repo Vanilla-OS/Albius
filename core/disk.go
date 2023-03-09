@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-    "strconv"
+	"strconv"
 	"strings"
 )
 
@@ -56,7 +56,6 @@ func (disk *Disk) AvailableSectors() []Sector {
 	return sectors
 }
 
-
 type LocateDiskOutput struct {
 	Disk Disk
 }
@@ -66,21 +65,20 @@ func LocateDisk(diskname string) (*Disk, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, diskname))
 	output, err := cmd.Output()
 	if err != nil {
-        return nil, fmt.Errorf("Failed to list disk: %s", err)
+		return nil, fmt.Errorf("Failed to list disk: %s", err)
 	}
 
 	var decoded LocateDiskOutput
 	dec := json.NewDecoder(strings.NewReader(string(output)))
 	err = dec.Decode(&decoded)
 	if err != nil {
-        return nil, fmt.Errorf("Failed to retrieve partition: %s", err)
+		return nil, fmt.Errorf("Failed to retrieve partition: %s", err)
 	}
 
 	device := decoded.Disk
 
 	return &device, nil
 }
-
 
 func (disk *Disk) LabelDisk(label string) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
@@ -90,7 +88,7 @@ func (disk *Disk) LabelDisk(label string) error {
 		return fmt.Errorf("Failed to label disk: %s", err)
 	}
 
-    return nil
+	return nil
 }
 
 func (target *Disk) NewPartition(name, fsType string, start, end int) (*Partition, error) {
@@ -105,10 +103,10 @@ func (target *Disk) NewPartition(name, fsType string, start, end int) (*Partitio
 
 	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, name, fsType, start, end))
 	if err != nil {
-        return nil, fmt.Errorf("Failed to create partition: %s", err)
+		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
-    // TODO: Add Path to Partitions (or a pointer to parent)
+	// TODO: Add Path to Partitions (or a pointer to parent)
 
-    return &target.Partitions[len(target.Partitions)-1], nil
+	return &target.Partitions[len(target.Partitions)-1], nil
 }

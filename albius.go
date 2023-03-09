@@ -1,12 +1,16 @@
 package main
 
 import (
-	"github.com/vanilla-os/albius/albius"
+	"fmt"
+
+	"github.com/vanilla-os/albius/core"
 )
-import "C"
 
-type Setup func()
+func main() {
+	disk, err := albius.LocateDisk("/dev/nvme0n1")
+	if err != nil {
+		panic(err)
+	}
 
-var setup Setup = ffi.Start
-
-func main() {}
+	fmt.Println(disk)
+}

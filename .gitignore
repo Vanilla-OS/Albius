@@ -1,4 +1,2 @@
-__pycache__/
-albius.so
-_build
 .buildconfig
+albius

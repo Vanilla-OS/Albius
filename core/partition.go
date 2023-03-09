@@ -5,9 +5,28 @@ import (
 	"regexp"
 )
 
+const (
+	BTRFS      = "btrfs"
+	EXT2       = "ext2"
+	EXT3       = "ext3"
+	EXT4       = "ext4"
+	FAT16      = "fat16"
+	FAT32      = "fat32"
+	HFS        = "hfs"
+	HFS_PLUS   = "hfs+"
+	LINUX_SWAP = "linux-swap"
+	NTFS       = "ntfs"
+	REISERFS   = "reiserfs"
+	UDF        = "udf"
+	XFS        = "xfs"
+)
+
+type PartitionFs string
+
 type Partition struct {
-	Number                                   int
-	Start, End, Size, Type, Filesystem, Path string
+	Number                       int
+	Start, End, Size, Type, Path string
+	Filesystem                   PartitionFs
 }
 
 func (part *Partition) Mount(location string) error {
@@ -92,16 +111,14 @@ func (target *Partition) NamePartition(name string) error {
 	return nil
 }
 
-func (target *Partition) SetPartitionFlag(flag string, state int) error {
+func (target *Partition) SetPartitionFlag(flag string, state bool) error {
 	setPartCmd := "parted -s %s set %s %s %s"
 
 	var stateStr string
-	if state == 0 {
+	if !state {
 		stateStr = "off"
-	} else if state == 1 {
-		stateStr = "on"
 	} else {
-		return fmt.Errorf("Invalid flag state: %d", state)
+		stateStr = "on"
 	}
 
 	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
@@ -115,4 +132,14 @@ func (target *Partition) SetPartitionFlag(flag string, state int) error {
 	}
 
 	return nil
+}
+
+func (target *Partition) FillPath(basePath string) {
+	targetPathEnd := basePath[len(basePath)-1]
+	//                  "0"                    "9"
+	if targetPathEnd >= 48 || targetPathEnd <= 57 {
+	    target.Path = fmt.Sprintf("%sp%d", basePath, target.Number)
+	} else {
+	    target.Path = fmt.Sprintf("%s%d", basePath, target.Number)
+    }
 }

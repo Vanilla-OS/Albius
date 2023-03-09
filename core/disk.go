@@ -8,12 +8,20 @@ import (
 	"strings"
 )
 
+const (
+	MSDOS = "msdos"
+	GPT   = "gpt"
+)
+
+type DiskLabel string
+
 type Sector struct {
 	Start, End int
 }
 
 type Disk struct {
-	Path, Size, Model, Transport, Label                  string
+	Path, Size, Model, Transport                         string
+	Label                                                DiskLabel
 	LogicalSectorSize, PhysicalSectorSize, MaxPartitions int
 	Partitions                                           []Partition
 }
@@ -76,11 +84,14 @@ func LocateDisk(diskname string) (*Disk, error) {
 	}
 
 	device := decoded.Disk
+	for _, part := range device.Partitions {
+		part.FillPath(device.Path)
+	}
 
 	return &device, nil
 }
 
-func (disk *Disk) LabelDisk(label string) error {
+func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
 	err := RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
@@ -91,11 +102,11 @@ func (disk *Disk) LabelDisk(label string) error {
 	return nil
 }
 
-func (target *Disk) NewPartition(name, fsType string, start, end int) (*Partition, error) {
+func (target *Disk) NewPartition(name, fsType PartitionFs, start, end int) (*Partition, error) {
 	createPartCmd := "parted -s %s mkpart%s \"%s\" %s %d %d"
 
 	var partType string
-	if target.Label == "msdos" {
+	if target.Label == MSDOS {
 		partType = " primary"
 	} else {
 		partType = ""
@@ -106,7 +117,8 @@ func (target *Disk) NewPartition(name, fsType string, start, end int) (*Partitio
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
-	// TODO: Add Path to Partitions (or a pointer to parent)
+	newPartition := &target.Partitions[len(target.Partitions)-1]
+	newPartition.FillPath(target.Path)
 
-	return &target.Partitions[len(target.Partitions)-1], nil
+	return newPartition, nil
 }

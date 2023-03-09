@@ -75,18 +75,29 @@ func LocateDisk(diskname string) (*Disk, error) {
 		return nil, fmt.Errorf("Failed to list disk: %s", err)
 	}
 
+	var device *Disk
 	var decoded *LocateDiskOutput
 	err = json.Unmarshal(output, &decoded)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve partition: %s", err)
+		// Try a different approach suitable for when the disk is unformatted
+		var decodedMap map[string]map[string]interface{}
+		err = json.Unmarshal(output, &decodedMap)
+		device := new(Disk)
+		for k, v := range decodedMap["Disk"] {
+			err := setField(device, k, v)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to decode parted output: %s", err)
+			}
+		}
+	} else {
+		device = &decoded.Disk
 	}
 
-	device := decoded.Disk
 	for _, part := range device.Partitions {
 		part.FillPath(device.Path)
 	}
 
-	return &device, nil
+	return device, nil
 }
 
 func (disk *Disk) LabelDisk(label DiskLabel) error {

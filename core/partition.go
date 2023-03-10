@@ -80,7 +80,7 @@ func (target *Partition) RemovePartition() error {
 }
 
 func (target *Partition) ResizePartition(newEnd int) error {
-	resizePartCmd := "parted -s %s resizepart %s %d"
+	resizePartCmd := "parted -s %s unit MiB resizepart %s %d"
 
 	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
 	partExpr := regexp.MustCompile("[0-9]+$")

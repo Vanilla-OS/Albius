@@ -145,5 +145,8 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	newPartition := &target.Partitions[len(target.Partitions)-1]
 	newPartition.FillPath(target.Path)
 
+	newPartition.Filesystem = fsType
+	MakeFs(newPartition)
+
 	return newPartition, nil
 }

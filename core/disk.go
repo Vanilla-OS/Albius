@@ -93,8 +93,8 @@ func LocateDisk(diskname string) (*Disk, error) {
 		device = &decoded.Disk
 	}
 
-	for _, part := range device.Partitions {
-		part.FillPath(device.Path)
+	for i := 0; i < len(device.Partitions); i++ {
+		device.Partitions[i].FillPath(device.Path)
 	}
 
 	return device, nil
@@ -128,6 +128,11 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 
 	newPartition := &target.Partitions[len(target.Partitions)-1]
 	newPartition.FillPath(target.Path)
+
+	target, err = LocateDisk(target.Path)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create partition: %s", err)
+	}
 
 	return newPartition, nil
 }

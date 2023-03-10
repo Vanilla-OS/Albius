@@ -137,9 +137,9 @@ func (target *Partition) SetPartitionFlag(flag string, state bool) error {
 func (target *Partition) FillPath(basePath string) {
 	targetPathEnd := basePath[len(basePath)-1]
 	//                  "0"                    "9"
-	if targetPathEnd >= 48 || targetPathEnd <= 57 {
-	    target.Path = fmt.Sprintf("%sp%d", basePath, target.Number)
+	if targetPathEnd >= 48 && targetPathEnd <= 57 {
+		target.Path = fmt.Sprintf("%sp%d", basePath, target.Number)
 	} else {
-	    target.Path = fmt.Sprintf("%s%d", basePath, target.Number)
-    }
+		target.Path = fmt.Sprintf("%s%d", basePath, target.Number)
+	}
 }

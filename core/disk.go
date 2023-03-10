@@ -112,7 +112,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 }
 
 func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int) (*Partition, error) {
-	createPartCmd := "parted -s %s unit MiB mkpart%s \"%s\" %s %d %d"
+	createPartCmd := "parted -s %s unit MiB mkpart%s \"%s\" %s %d %s"
 
 	var partType string
 	if target.Label == MSDOS {
@@ -121,7 +121,14 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		partType = ""
 	}
 
-	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, name, fsType, start, end))
+	var endStr string
+	if end == -1 {
+		endStr = "--0"
+	} else {
+		endStr = fmt.Sprint(end)
+	}
+
+	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, name, fsType, start, endStr))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}

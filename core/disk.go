@@ -126,13 +126,13 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
-	newPartition := &target.Partitions[len(target.Partitions)-1]
-	newPartition.FillPath(target.Path)
-
 	target, err = LocateDisk(target.Path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
+
+	newPartition := &target.Partitions[len(target.Partitions)-1]
+	newPartition.FillPath(target.Path)
 
 	return newPartition, nil
 }

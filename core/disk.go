@@ -104,6 +104,24 @@ func LocateDisk(diskname string) (*Disk, error) {
 	return device, nil
 }
 
+func (disk *Disk) Update() error {
+	updatedInfo, err := LocateDisk(disk.Path)
+	if err != nil {
+		return err
+	}
+
+	disk.Path = updatedInfo.Path
+	disk.Size = updatedInfo.Size
+	disk.Transport = updatedInfo.Transport
+	disk.Label = updatedInfo.Label
+	disk.LogicalSectorSize = updatedInfo.LogicalSectorSize
+	disk.PhysicalSectorSize = updatedInfo.PhysicalSectorSize
+	disk.MaxPartitions = updatedInfo.MaxPartitions
+	disk.Partitions = updatedInfo.Partitions
+
+	return nil
+}
+
 func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
@@ -137,8 +155,7 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
-	// FIXME: This doesn't update the pointer from caller
-	target, err = LocateDisk(target.Path)
+	err = target.Update()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}

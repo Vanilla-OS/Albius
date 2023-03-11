@@ -155,5 +155,5 @@ func (target *Partition) GetUUID() (string, error) {
 		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
 	}
 
-	return string(output), nil
+	return string(output[:len(output)-1]), nil
 }

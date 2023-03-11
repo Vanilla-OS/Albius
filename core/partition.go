@@ -2,6 +2,7 @@ package albius
 
 import (
 	"fmt"
+	"os/exec"
 	"regexp"
 )
 
@@ -31,6 +32,7 @@ type Partition struct {
 
 func (part *Partition) Mount(location string) error {
 	// TODO: Handle crypto_LUKS filesystems
+	// TODO: Create directory if location doesn't exist
 	mountCmd := "mount -m %s %s"
 
 	err := RunCommand(fmt.Sprintf(mountCmd, part.Path, location))
@@ -142,4 +144,16 @@ func (target *Partition) FillPath(basePath string) {
 	} else {
 		target.Path = fmt.Sprintf("%s%d", basePath, target.Number)
 	}
+}
+
+func (target *Partition) GetUUID() (string, error) {
+	lsblkCmd := "lsblk -n -o UUID %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, target.Path))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
+	}
+
+	return string(output), nil
 }

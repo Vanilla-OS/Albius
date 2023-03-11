@@ -7,7 +7,7 @@ import (
 
 // Set locale
 // Set keyboard
-// Set user?
+// Set user
 
 func SetTimezone(tz string, targetRoot string) error {
 	tzPath := targetRoot + "/etc/timezone"

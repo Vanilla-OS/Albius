@@ -137,6 +137,7 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
+	// FIXME: This doesn't update the pointer from caller
 	target, err = LocateDisk(target.Path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)

@@ -98,7 +98,10 @@ func UpdateInitramfs(root string) error {
 }
 
 func RunInChroot(root, command string) error {
-	err := RunCommand(fmt.Sprintf("chroot %s sh -c %s", root, command))
+	cmd := exec.Command("chroot", root, "sh", "-c", command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}

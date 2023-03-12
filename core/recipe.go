@@ -4,24 +4,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 )
 
 type Recipe struct {
-	setup Setup
-	mountpoints []Mountpoint
+	Setup       Setup
+	Mountpoints []Mountpoint
 }
 
 type Setup struct {
-	steps []Step
+	Steps []Step
 }
 
 type Step struct {
-	disk, operation string
-	params []interface{}
+	Disk, Operation string
+	Params          []interface{}
 }
 
 type Mountpoint struct {
-	partition, target string
+	Partition, Target string
 }
 
 func ReadRecipe(path string) (*Recipe, error) {
@@ -30,11 +32,34 @@ func ReadRecipe(path string) (*Recipe, error) {
 		return nil, fmt.Errorf("Failed to read recipe: %s", err)
 	}
 
-	var recipe *Recipe
-	err = json.Unmarshal(content, &recipe)
+	var recipe Recipe
+	dec := json.NewDecoder(strings.NewReader(string(content)))
+	dec.DisallowUnknownFields()
+	dec.UseNumber()
+	err = dec.Decode(&recipe)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal recipe: %s", err)
+		return nil, fmt.Errorf("Failed to read recipe: %s", err)
 	}
 
-	return recipe, nil
+	// Convert json.Number to int64
+	for i := 0; i < len(recipe.Setup.Steps); i++ {
+		step := &recipe.Setup.Steps[i]
+		formattedParams := []interface{}{}
+		for _, param := range step.Params {
+			var dummy json.Number
+			dummy = "1"
+			if reflect.TypeOf(param) == reflect.TypeOf(dummy) {
+				convertedParam, err := param.(json.Number).Int64()
+				if err != nil {
+					return nil, fmt.Errorf("Failed to convert recipe parameter: %s", err)
+				}
+				formattedParams = append(formattedParams, convertedParam)
+			} else {
+				formattedParams = append(formattedParams, param)
+			}
+		}
+		step.Params = formattedParams
+	}
+
+	return &recipe, nil
 }

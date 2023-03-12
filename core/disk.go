@@ -134,7 +134,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 	return nil
 }
 
-func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int) (*Partition, error) {
+func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int64) (*Partition, error) {
 	createPartCmd := "parted -s %s unit MiB mkpart%s \"%s\" %s %d %s"
 
 	var partType string

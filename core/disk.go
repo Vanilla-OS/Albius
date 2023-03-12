@@ -27,32 +27,33 @@ type Disk struct {
 
 func (disk *Disk) AvailableSectors() ([]Sector, error) {
 	sectors := []Sector{}
-	latestEnd := 0
 
 	for i, part := range disk.Partitions {
-		endInt, err := strconv.Atoi(part.End[:len(part.End)-1])
+		endInt, err := strconv.Atoi(part.End[:len(part.End)-3])
 		if err != nil {
 			return []Sector{}, fmt.Errorf("Failed to retrieve end position of partition: %s", err)
 		}
 
 		if i < len(disk.Partitions)-1 {
 			nextStart := disk.Partitions[i+1].Start
-			nextStartInt, err := strconv.Atoi(part.Start[:len(nextStart)-1])
+			nextStartInt, err := strconv.Atoi(nextStart[:len(nextStart)-3])
 			if err != nil {
-				return []Sector{}, fmt.Errorf("Failed to retrieve end position of next partition: %s", err)
+				return []Sector{}, fmt.Errorf("Failed to retrieve start position of next partition: %s", err)
 			}
-			sectors = append(sectors, Sector{latestEnd + 1, nextStartInt - 1})
-			latestEnd = endInt + disk.PhysicalSectorSize
+
+			if endInt != nextStartInt {
+				sectors = append(sectors, Sector{endInt, nextStartInt})
+			}
 		}
 	}
 
 	// Handle empty space after last partition
 	lastPartitionEndStr := disk.Partitions[len(disk.Partitions)-1].End
-	lastPartitionEnd, err := strconv.Atoi(lastPartitionEndStr)
+	lastPartitionEnd, err := strconv.Atoi(lastPartitionEndStr[:len(lastPartitionEndStr)-3])
 	if err != nil {
 		return []Sector{}, fmt.Errorf("Failed to retrieve end position of last partition: %s", err)
 	}
-	diskEnd, err := strconv.Atoi(disk.Size)
+	diskEnd, err := strconv.Atoi(disk.Size[:len(disk.Size)-3])
 	if err != nil {
 		return []Sector{}, fmt.Errorf("Failed to retrieve disk end")
 	}
@@ -68,7 +69,7 @@ type LocateDiskOutput struct {
 }
 
 func LocateDisk(diskname string) (*Disk, error) {
-	findPartitionCmd := "parted -sj %s unit B print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
+	findPartitionCmd := "parted -sj %s unit MiB print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, diskname))
 	output, err := cmd.Output()
 	if err != nil {

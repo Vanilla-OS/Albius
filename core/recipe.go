@@ -137,7 +137,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "adduser":
 		username := args[0].(string)
 		fullname := args[1].(string)
-		groups := args[2].([]string)
+		groups := []string{}
+		for _, group := range args[2].([]interface{}) {
+			groupStr := group.(string)
+			groups = append(groups, groupStr)
+		}
 		withPassword := false
 		password := ""
 		if len(args) == 4 {

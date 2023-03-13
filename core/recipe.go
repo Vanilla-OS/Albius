@@ -92,14 +92,14 @@ func runOperation(diskLabel, operation string, args []interface{}) error {
 
 	switch operation {
 	case "label":
-		label := args[0].(DiskLabel)
+		label := DiskLabel(args[0].(string))
 		err = disk.LabelDisk(label)
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
 	case "mkpart":
 		name := args[0].(string)
-		fsType := args[1].(PartitionFs)
+		fsType := PartitionFs(args[1].(string))
 		start := args[2].(int64)
 		end := args[3].(int64)
 		_, err = disk.NewPartition(name, fsType, start, end)
@@ -157,7 +157,7 @@ func (recipe *Recipe) SetupMountpoints() error {
 			rootAMounted = true
 		}
 
-		disk.Partitions[partInt].Mount(baseRoot + mnt.Target)
+		disk.Partitions[partInt-1].Mount(baseRoot + mnt.Target)
 	}
 
 	return nil

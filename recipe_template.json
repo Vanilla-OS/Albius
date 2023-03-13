@@ -1,65 +1,63 @@
 {
-	"setup": {
-		"steps": [
-			{
-				"disk": "/dev/sda",
-				"operation": "label",
-				"params": [
-					"gpt"
-				]
-			},
-			{
-				"disk": "/dev/sda",
-				"operation": "mkpart",
-				"params": [
-					"boot",
-					"ext4",
-					1,
-					1025
-				]
-			},
-			{
-				"disk": "/dev/sda",
-				"operation": "mkpart",
-				"params": [
-					"efi",
-					"fat32",
-					1025,
-					1537
-				]
-			},
-			{
-				"disk": "/dev/sda",
-				"operation": "mkpart",
-				"params": [
-					"a",
-					"btrfs",
-					1537,
-					13825
-				]
-			},
-			{
-				"disk": "/dev/sda",
-				"operation": "mkpart",
-				"params": [
-					"b",
-					"btrfs",
-					13825,
-					26113
-				]
-			},
-			{
-				"disk": "/dev/sda",
-				"operation": "mkpart",
-				"params": [
-					"home",
-					"btrfs",
-					26113,
-					-1
-				]
-			}
-		]
-	},
+	"setup": [
+		{
+			"disk": "/dev/sda",
+			"operation": "label",
+			"params": [
+				"gpt"
+			]
+		},
+		{
+			"disk": "/dev/sda",
+			"operation": "mkpart",
+			"params": [
+				"boot",
+				"ext4",
+				1,
+				1025
+			]
+		},
+		{
+			"disk": "/dev/sda",
+			"operation": "mkpart",
+			"params": [
+				"efi",
+				"fat32",
+				1025,
+				1537
+			]
+		},
+		{
+			"disk": "/dev/sda",
+			"operation": "mkpart",
+			"params": [
+				"a",
+				"btrfs",
+				1537,
+				13825
+			]
+		},
+		{
+			"disk": "/dev/sda",
+			"operation": "mkpart",
+			"params": [
+				"b",
+				"btrfs",
+				13825,
+				26113
+			]
+		},
+		{
+			"disk": "/dev/sda",
+			"operation": "mkpart",
+			"params": [
+				"home",
+				"btrfs",
+				26113,
+				-1
+			]
+		}
+	],
 	"mountpoints": [
 		{
 			"partition": "/dev/sda3",
@@ -85,5 +83,27 @@
 	"installation": {
 		"method": "unsquashfs",
 		"source": "/cdrom/casper/filesystem.squashfs"
-	}
+	},
+	"postInstallation": [
+		{
+			"chroot": true,
+			"operation": "adduser",
+			"params": [
+				"default",
+				"Default"
+				[
+					"sudo",
+					"lpadmin"
+				],
+				"password"
+			]
+		},
+		{
+			"chroot": true,
+			"operation": "timezone",
+			"params": [
+				"America/Sao_Paulo"
+			]
+		}
+	]
 }

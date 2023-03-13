@@ -23,16 +23,13 @@ const (
 type InstallationMethod string
 
 type Recipe struct {
-	Setup        Setup
-	Mountpoints  []Mountpoint
-	Installation Installation
+	Setup            []SetupStep
+	Mountpoints      []Mountpoint
+	Installation     Installation
+	PostInstallation []PostStep
 }
 
-type Setup struct {
-	Steps []Step
-}
-
-type Step struct {
+type SetupStep struct {
 	Disk, Operation string
 	Params          []interface{}
 }
@@ -44,6 +41,12 @@ type Mountpoint struct {
 type Installation struct {
 	Method InstallationMethod
 	Source string
+}
+
+type PostStep struct {
+	Chroot    bool
+	Operation string
+	Params    []interface{}
 }
 
 func ReadRecipe(path string) (*Recipe, error) {
@@ -62,8 +65,8 @@ func ReadRecipe(path string) (*Recipe, error) {
 	}
 
 	// Convert json.Number to int64
-	for i := 0; i < len(recipe.Setup.Steps); i++ {
-		step := &recipe.Setup.Steps[i]
+	for i := 0; i < len(recipe.Setup); i++ {
+		step := &recipe.Setup[i]
 		formattedParams := []interface{}{}
 		for _, param := range step.Params {
 			var dummy json.Number
@@ -84,7 +87,7 @@ func ReadRecipe(path string) (*Recipe, error) {
 	return &recipe, nil
 }
 
-func runOperation(diskLabel, operation string, args []interface{}) error {
+func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	disk, err := LocateDisk(diskLabel)
 	if err != nil {
 		return err
@@ -114,8 +117,53 @@ func runOperation(diskLabel, operation string, args []interface{}) error {
 }
 
 func (recipe *Recipe) RunSetup() error {
-	for _, step := range recipe.Setup.Steps {
-		err := runOperation(step.Disk, step.Operation, step.Params)
+	for _, step := range recipe.Setup {
+		err := runSetupOperation(step.Disk, step.Operation, step.Params)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func runPostInstallOperation(chroot bool, operation string, args []interface{}) error {
+	targetRoot := ""
+	if chroot {
+		targetRoot = RootA
+	}
+
+	switch operation {
+	case "adduser":
+		username := args[0].(string)
+		fullname := args[1].(string)
+		groups := args[2].([]string)
+		withPassword := false
+		password := ""
+		if len(args) == 4 {
+			withPassword = true
+			password = args[3].(string)
+		}
+		err := AddUser(targetRoot, username, fullname, groups, withPassword, password)
+		if err != nil {
+			return err
+		}
+	case "timezone":
+		tz := args[0].(string)
+		err := SetTimezone(targetRoot, tz)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Unrecognized operation %s", operation)
+	}
+
+	return nil
+}
+
+func (recipe *Recipe) RunPostInstall() error {
+	for _, step := range recipe.PostInstallation {
+		err := runPostInstallOperation(step.Chroot, step.Operation, step.Params)
 		if err != nil {
 			return err
 		}

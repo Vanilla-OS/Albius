@@ -25,5 +25,10 @@ func main() {
 		panic(err)
 	}
 
-	// TODO: Create user, call abroot-adapter
+	err = recipe.RunPostInstall()
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: Call abroot-adapter
 }

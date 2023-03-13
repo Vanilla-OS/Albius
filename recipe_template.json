@@ -90,7 +90,7 @@
 			"operation": "adduser",
 			"params": [
 				"default",
-				"Default"
+				"Default",
 				[
 					"sudo",
 					"lpadmin"

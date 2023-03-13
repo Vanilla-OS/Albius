@@ -63,23 +63,27 @@
 	"mountpoints": [
 		{
 			"partition": "/dev/sda3",
-			"target": "/mnt/a"
+			"target": "/"
 		},
 		{
 			"partition": "/dev/sda4",
-			"target": "/mnt/b"
+			"target": "/"
 		},
 		{
 			"partition": "/dev/sda1",
-			"target": "/mnt/a/boot"
+			"target": "/boot"
 		},
 		{
 			"partition": "/dev/sda2",
-			"target": "/mnt/a/boot/efi"
+			"target": "/boot/efi"
 		},
 		{
 			"partition": "/dev/sda5",
-			"target": "/mnt/a/home"
+			"target": "/home"
 		}
-	]
+	],
+	"installation": {
+		"method": "unsquashfs",
+		"source": "/cdrom/casper/filesystem.squashfs"
+	}
 }

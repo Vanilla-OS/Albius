@@ -2,6 +2,7 @@ package albius
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
 )
@@ -32,10 +33,20 @@ type Partition struct {
 
 func (part *Partition) Mount(location string) error {
 	// TODO: Handle crypto_LUKS filesystems
-	// TODO: Create directory if location doesn't exist
 	mountCmd := "mount -m %s %s"
 
-	err := RunCommand(fmt.Sprintf(mountCmd, part.Path, location))
+	// Create directory if non-existent
+	_, err := os.Stat(location)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(location, 0644)
+		if err != nil {
+			return fmt.Errorf("Failed to create target directory for mount: %s", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("Failed to stat directory: %s", err)
+	}
+
+	err = RunCommand(fmt.Sprintf(mountCmd, part.Path, location))
 	if err != nil {
 		return fmt.Errorf("Failed to run mount command: %s", err)
 	}
@@ -153,6 +164,30 @@ func (target *Partition) GetUUID() (string, error) {
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
+	}
+
+	return string(output[:len(output)-1]), nil
+}
+
+func GetUUIDByPath(path string) (string, error) {
+	lsblkCmd := "lsblk -n -o UUID %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
+	}
+
+	return string(output[:len(output)-1]), nil
+}
+
+func GetFilesystemByPath(path string) (string, error) {
+	lsblkCmd := "lsblk -n -o FSTYPE %s"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get partition FSTYPE: %s", err)
 	}
 
 	return string(output[:len(output)-1]), nil

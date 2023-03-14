@@ -32,18 +32,18 @@ func MakeFs(part *Partition) error {
 	var err error
 	switch part.Filesystem {
 	case FAT16:
-		makefsCmd := "mkfs.fat -F 16 %s"
+		makefsCmd := "mkfs.fat -I -F 16 %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case FAT32:
-		makefsCmd := "mkfs.fat -F 32 %s"
+		makefsCmd := "mkfs.fat -I -F 32 %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case LINUX_SWAP:
-		makefsCmd := "mkswap %s"
+		makefsCmd := "mkswap -f %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case HFS, HFS_PLUS, UDF:
 		return fmt.Errorf("Unsupported filesystem: %s", part.Filesystem)
 	default:
-		makefsCmd := "mkfs.%s %s"
+		makefsCmd := "mkfs.%s -f %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, part.Path))
 	}
 

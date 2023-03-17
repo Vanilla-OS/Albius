@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/vanilla-os/oci"
 )
 
 const (
@@ -264,7 +266,14 @@ func (recipe *Recipe) Install() error {
 			return err
 		}
 	case OCI:
-		return fmt.Errorf("Not implemented yet")
+		// TODO: Persistence directory
+		// /etc  -> /persist/etc
+		// /nix  -> /persist/nix
+		// Won't use abroot-adapter, how to sync changes?
+		err := oci.Write(recipe.Installation.Source, RootA)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("Unsupported installation method '%s'", recipe.Installation.Method)
 	}

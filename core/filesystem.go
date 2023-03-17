@@ -37,6 +37,9 @@ func MakeFs(part *Partition) error {
 	case FAT32:
 		makefsCmd := "mkfs.fat -I -F 32 %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
+	case EXT2, EXT3, EXT4:
+		makefsCmd := "mkfs.%s -F %s"
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, part.Path))
 	case LINUX_SWAP:
 		makefsCmd := "mkswap -f %s"
 		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))

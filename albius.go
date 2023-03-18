@@ -1,11 +1,13 @@
 package main
 
 import (
+	"os"
+
 	"github.com/vanilla-os/albius/core"
 )
 
 func main() {
-	recipe, err := albius.ReadRecipe("recipe_template.json")
+	recipe, err := albius.ReadRecipe(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -29,6 +31,4 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// TODO: Call abroot-adapter
 }

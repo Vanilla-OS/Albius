@@ -48,5 +48,26 @@ func AddUser(targetRoot, username, fullname string, groups []string, withPasswor
 		}
 	}
 
+	if len(groups) == 0 {
+		return nil
+	}
+	addGroupCmd := "usermod -a -G %s %s"
+	groupList := ""
+	for i, group := range groups {
+		groupList += group
+		if i < len(group)-1 {
+			groupList += ","
+		}
+	}
+
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, fmt.Sprintf(addGroupCmd, groupList, username))
+	} else {
+		err = RunCommand(fmt.Sprintf(addGroupCmd, groupList, username))
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to set password: %s", err)
+	}
+
 	return nil
 }

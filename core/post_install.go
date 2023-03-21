@@ -55,7 +55,7 @@ func AddUser(targetRoot, username, fullname string, groups []string, withPasswor
 	groupList := ""
 	for i, group := range groups {
 		groupList += group
-		if i < len(group)-1 {
+		if i < len(groups)-1 {
 			groupList += ","
 		}
 	}

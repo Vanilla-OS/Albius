@@ -167,5 +167,10 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	newPartition.Filesystem = fsType
 	MakeFs(newPartition)
 
+	err = newPartition.NamePartition(name)
+	if err != nil {
+		return nil, err
+	}
+
 	return newPartition, nil
 }

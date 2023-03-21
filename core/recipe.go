@@ -160,6 +160,19 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if err != nil {
 			return err
 		}
+	case "shell":
+		for _, arg := range args {
+			command := arg.(string)
+			var err error
+			if chroot {
+				err = RunInChroot(targetRoot, command)
+			} else {
+				err = RunCommand(command)
+			}
+			if err != nil {
+				return err
+			}
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

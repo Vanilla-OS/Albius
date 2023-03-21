@@ -111,6 +111,37 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
+	case "rm":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		err = disk.Partitions[partNum].RemovePartition()
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+	case "resizepart":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		partNewSize, err := strconv.Atoi(args[1].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		err = disk.Partitions[partNum].ResizePartition(partNewSize)
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+	case "setflag":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		err = disk.Partitions[partNum].SetPartitionFlag(args[1].(string), args[2].(bool))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

@@ -3,6 +3,7 @@ package albius
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // Set locale
@@ -70,4 +71,20 @@ func AddUser(targetRoot, username, fullname string, groups []string, withPasswor
 	}
 
 	return nil
+}
+
+func RemovePackages(targetRoot, pkgRemovePath, removeCmd string) error {
+	pkgRemoveContent, err := os.ReadFile(pkgRemovePath)
+	if err != nil {
+		return fmt.Errorf("Failed to read package removal file: %s", err)
+	}
+
+	pkgList := strings.Replace(string(pkgRemoveContent), "\n", " ", -1)
+
+	completeCmd := fmt.Sprintf("%s %s", removeCmd, pkgList)
+	if targetRoot != "" {
+		return RunInChroot(targetRoot, completeCmd)
+	} else {
+		return RunCommand(completeCmd)
+	}
 }

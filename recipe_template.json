@@ -82,9 +82,17 @@
 	],
 	"installation": {
 		"method": "unsquashfs",
-		"source": "/cdrom/casper/filesystem.squashfs"
+		"source": "/live/filesystem.squashfs"
 	},
 	"postInstallation": [
+		{
+			"chroot": true,
+			"operation": "pkgRemove",
+			"params": [
+				"/live/filesystem.packages-remove",
+				"apt remove"
+			]
+		},
 		{
 			"chroot": true,
 			"operation": "adduser",

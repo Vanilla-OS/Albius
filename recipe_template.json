@@ -87,7 +87,7 @@
 	"postInstallation": [
 		{
 			"chroot": true,
-			"operation": "pkgRemove",
+			"operation": "pkgremove",
 			"params": [
 				"/live/filesystem.packages-remove",
 				"apt remove"

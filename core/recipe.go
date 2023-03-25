@@ -204,7 +204,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 				return err
 			}
 		}
-	case "pkgRemove":
+	case "pkgremove":
 		pkgRemovePath := args[0].(string)
 		removeCmd := args[1].(string)
 		err := RemovePackages(targetRoot, pkgRemovePath, removeCmd)

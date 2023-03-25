@@ -3,6 +3,7 @@ package albius
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -87,4 +88,28 @@ func RemovePackages(targetRoot, pkgRemovePath, removeCmd string) error {
 	} else {
 		return RunCommand(completeCmd)
 	}
+}
+
+func ChangeHostname(targetRoot, hostname string) error {
+	cmd := exec.Command("sh", "-c", "cat", targetRoot, "/etc/hostname")
+	currentHostname, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("Failed get hostname: %s", err)
+	}
+
+	replaceHostnameCmd := "echo %s > %s/etc/hostname"
+	cmd = exec.Command("sh", "-c", fmt.Sprintf(replaceHostnameCmd, hostname, targetRoot))
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Failed to change hostname: %s", err)
+	}
+
+	replaceHostsCmd := "sed -i 's/%s/%s/g' %s/etc/hosts"
+	cmd = exec.Command("sh", "-c", fmt.Sprintf(replaceHostsCmd, currentHostname, hostname, targetRoot))
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Failed to change hosts file: %s", err)
+	}
+
+	return nil
 }

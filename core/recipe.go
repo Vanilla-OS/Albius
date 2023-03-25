@@ -211,6 +211,12 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if err != nil {
 			return err
 		}
+	case "hostname":
+		newHostname := args[0].(string)
+		err := ChangeHostname(targetRoot, newHostname)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

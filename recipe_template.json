@@ -112,6 +112,13 @@
 			"params": [
 				"America/Sao_Paulo"
 			]
+		},
+		{
+			"chroot": true,
+			"operation": "hostname",
+			"params": [
+				"vanilla"
+			]
 		}
 	]
 }

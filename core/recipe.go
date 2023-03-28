@@ -217,6 +217,12 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if err != nil {
 			return err
 		}
+	case "locale":
+		localeCode := args[0].(string)
+		err := SetLocale(targetRoot, localeCode)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

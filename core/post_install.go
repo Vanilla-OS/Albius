@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -109,6 +110,47 @@ func ChangeHostname(targetRoot, hostname string) error {
 	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("Failed to change hosts file: %s", err)
+	}
+
+	return nil
+}
+
+func SetLocale(targetRoot, locale string) error {
+	err := RunCommand(fmt.Sprintf("grep %s %s/usr/share/i18n/SUPPORTED", locale, targetRoot))
+	if err != nil {
+		return fmt.Errorf("Locale %s is invalid", locale)
+	}
+
+	err = RunCommand(fmt.Sprintf("sed 's/^\\# \\(%s\\)/\\1/' %s/etc/locale.gen", regexp.QuoteMeta(locale), targetRoot))
+	if err != nil {
+		return fmt.Errorf("Failed to set locale: %s", err)
+	}
+
+	localeGenCmd := "locale-gen"
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, localeGenCmd)
+	} else {
+		err = RunCommand(localeGenCmd)
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to set locale: %s", err)
+	}
+
+	localeContents := `LANG=__lang__
+LC_NUMERIC=__lang__
+LC_TIME=__lang__
+LC_MONETARY=__lang__
+LC_PAPER=__lang__
+LC_NAME=__lang__
+LC_ADDRESS=__lang__
+LC_TELEPHONE=__lang__
+LC_MEASUREMENT=__lang__
+LC_IDENTIFICATION=__lang__
+`
+	localePath := targetRoot + "/etc/default/locale"
+	err = os.WriteFile(localePath, []byte(strings.ReplaceAll(localeContents, "__lang__", locale)), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to set locale: %s", err)
 	}
 
 	return nil

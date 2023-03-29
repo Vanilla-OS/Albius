@@ -1,3 +1,9 @@
+albius (0.1.1) unstable; urgency=critical
+
+  * Fix build process
+
+ -- Mateus Melchiades <matbme@duck.com>  Wed, 29 Mar 2023 11:03:00 -0300
+
 albius (0.1.0) unstable; urgency=critical
 
   * Initial version

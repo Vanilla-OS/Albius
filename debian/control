@@ -1,0 +1,21 @@
+Source: albius
+Section: devel
+Priority: extra
+Maintainer: Mateus Melchiades <matbme@duck.com>
+Uploaders: Mateus Melchiades <matbme@duck.com>
+Build-Depends: debhelper (>= 9),
+               dh-golang,
+               golang-go
+Standards-Version: 3.9.6
+Homepage: https://github.com/vanilla-os/Albius
+Vcs-Browser: https://github.com/vanilla-os/Albius
+Vcs-Git: git://github.com/vanilla-os/Albius.git
+
+Package: albius
+Architecture: all
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         golang-go,
+         parted
+Built-Using: ${misc:Built-Using}
+Description: Linux installer backend with support for SquashFS and OCI installations.

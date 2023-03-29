@@ -1,3 +1,9 @@
+albius (0.1.2) unstable; urgency=critical
+
+  * Vendor dependencies
+
+ -- Mateus Melchiades <matbme@duck.com>  Wed, 29 Mar 2023 11:10:00 -0300
+
 albius (0.1.1) unstable; urgency=critical
 
   * Fix build process

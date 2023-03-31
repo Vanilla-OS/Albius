@@ -121,7 +121,7 @@ func SetLocale(targetRoot, locale string) error {
 		return fmt.Errorf("Locale %s is invalid", locale)
 	}
 
-	err = RunCommand(fmt.Sprintf("sed 's/^\\# \\(%s\\)/\\1/' %s/etc/locale.gen", regexp.QuoteMeta(locale), targetRoot))
+	err = RunCommand(fmt.Sprintf("sed -i 's/^\\# \\(%s\\)/\\1/' %s/etc/locale.gen", regexp.QuoteMeta(locale), targetRoot))
 	if err != nil {
 		return fmt.Errorf("Failed to set locale: %s", err)
 	}

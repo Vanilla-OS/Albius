@@ -248,7 +248,28 @@ func (recipe *Recipe) SetupMountpoints() error {
 	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
 	partExpr := regexp.MustCompile("[0-9]+$")
 
-	for _, mnt := range recipe.Mountpoints {
+	/* We need to mount the partitions in order to prevent one mountpoint
+	 * from overriding another.
+	 * For example, if we mount /boot first in /mnt/a/boot and then mount / in
+	 * /mnt/a, any files copied over to /mnt/a/boot will end up in the root
+	 * partition.
+	 */
+	mount_depth := 0
+	ordered_mountpoints := make([]*Mountpoint, 0)
+	for len(ordered_mountpoints) < len(recipe.Mountpoints) {
+		for i, mnt := range recipe.Mountpoints {
+			cnt := strings.Count(mnt.Target, "/")
+			if mnt.Target == "/" {
+				cnt = 0
+			}
+			if cnt == mount_depth {
+				ordered_mountpoints = append(ordered_mountpoints, &recipe.Mountpoints[i])
+			}
+		}
+		mount_depth += 1
+	}
+
+	for _, mnt := range ordered_mountpoints {
 		diskName := diskExpr.FindString(mnt.Partition)
 		part := partExpr.FindString(mnt.Partition)
 

@@ -116,7 +116,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
-		err = disk.Partitions[partNum].RemovePartition()
+		err = disk.Partitions[partNum-1].RemovePartition()
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
@@ -129,7 +129,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
-		err = disk.Partitions[partNum].ResizePartition(partNewSize)
+		err = disk.Partitions[partNum-1].ResizePartition(partNewSize)
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
@@ -138,7 +138,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
-		err = disk.Partitions[partNum].SetPartitionFlag(args[1].(string), args[2].(bool))
+		err = disk.Partitions[partNum-1].SetPartitionFlag(args[1].(string), args[2].(bool))
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}

@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// Set locale
 // Set keyboard
 
 func SetTimezone(targetRoot, tz string) error {
@@ -154,4 +153,14 @@ LC_IDENTIFICATION=__lang__
 	}
 
 	return nil
+}
+
+func Swapon(targetRoot, swapPart string) error {
+	swaponCmd := "swapon %s"
+
+	if targetRoot != "" {
+		return RunInChroot(targetRoot, fmt.Sprintf(swaponCmd, swapPart))
+	} else {
+		return RunCommand(fmt.Sprintf(swaponCmd, swapPart))
+	}
 }

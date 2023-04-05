@@ -142,6 +142,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
+	case "format":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		filesystem := args[1].(string)
+		disk.Partitions[partNum-1].Filesystem = PartitionFs(filesystem)
+		err = MakeFs(&disk.Partitions[partNum-1])
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}
@@ -220,6 +231,12 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "locale":
 		localeCode := args[0].(string)
 		err := SetLocale(targetRoot, localeCode)
+		if err != nil {
+			return err
+		}
+	case "swapon":
+		partition := args[0].(string)
+		err := Swapon(targetRoot, localeCode)
 		if err != nil {
 			return err
 		}
@@ -350,10 +367,6 @@ func (recipe *Recipe) Install() error {
 			return err
 		}
 	case OCI:
-		// TODO: Persistence directory
-		// /etc  -> /persist/etc
-		// /nix  -> /persist/nix
-		// Won't use abroot-adapter, how to sync changes?
 		err := oci.Write(recipe.Installation.Source, RootA)
 		if err != nil {
 			return err

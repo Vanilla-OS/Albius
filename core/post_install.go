@@ -9,9 +9,15 @@ import (
 )
 
 func SetTimezone(targetRoot, tz string) error {
-	tzPath := targetRoot + "/etc/timezone"
+	tzPath := targetRoot + "/etc/timezone\n"
 
 	err := os.WriteFile(tzPath, []byte(tz), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to set timezone: %s", err)
+	}
+
+	zoneinfoPath := "/usr/share/zoneinfo/%s"
+	err = os.Symlink(fmt.Sprintf(zoneinfoPath, tz), "/etc/localtime")
 	if err != nil {
 		return fmt.Errorf("Failed to set timezone: %s", err)
 	}
@@ -89,12 +95,6 @@ func RemovePackages(targetRoot, pkgRemovePath, removeCmd string) error {
 }
 
 func ChangeHostname(targetRoot, hostname string) error {
-	// cmd := exec.Command("sh", "-c", "cat", targetRoot, "/etc/hostname")
-	// currentHostname, err := cmd.Output()
-	// if err != nil {
-	// 	return fmt.Errorf("Failed get hostname: %s", err)
-	// }
-
 	replaceHostnameCmd := "echo %s > %s/etc/hostname"
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(replaceHostnameCmd, hostname, targetRoot))
 	err := cmd.Run()
@@ -102,12 +102,15 @@ func ChangeHostname(targetRoot, hostname string) error {
 		return fmt.Errorf("Failed to change hostname: %s", err)
 	}
 
-	// replaceHostsCmd := "sed -i 's/%s/%s/g' %s/etc/hosts"
-	// cmd = exec.Command("sh", "-c", fmt.Sprintf(replaceHostsCmd, currentHostname, hostname, targetRoot))
-	// err = cmd.Run()
-	// if err != nil {
-	// 	return fmt.Errorf("Failed to change hosts file: %s", err)
-	// }
+	hostsContents := `127.0.0.1	localhost
+::1		localhost
+127.0.1.1	%s.localdomain	%s
+`
+	hostsPath := targetRoot + "/etc/hosts"
+	err = os.WriteFile(hostsPath, []byte(fmt.Sprintf(hostsContents, hostname, hostname)), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to change hosts file: %s", err)
+	}
 
 	return nil
 }

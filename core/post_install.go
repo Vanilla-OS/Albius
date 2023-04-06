@@ -16,8 +16,12 @@ func SetTimezone(targetRoot, tz string) error {
 		return fmt.Errorf("Failed to set timezone: %s", err)
 	}
 
-	zoneinfoPath := "/usr/share/zoneinfo/%s"
-	err = os.Symlink(fmt.Sprintf(zoneinfoPath, tz), "/etc/localtime")
+	linkZoneinfoCmd := "ln -sf /usr/share/zoneinfo/%s /etc/localtime"
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, fmt.Sprintf(linkZoneinfoCmd, tz))
+	} else {
+		err = RunCommand(fmt.Sprintf(linkZoneinfoCmd, tz))
+	}
 	if err != nil {
 		return fmt.Errorf("Failed to set timezone: %s", err)
 	}

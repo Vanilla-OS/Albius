@@ -2,9 +2,9 @@ package albius
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -35,15 +35,15 @@ func (part *Partition) Mount(location string) error {
 	// TODO: Handle crypto_LUKS filesystems
 	mountCmd := "mount -m %s %s"
 
-	// Create directory if non-existent
-	_, err := os.Stat(location)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(location, 0644)
-		if err != nil {
-			return fmt.Errorf("Failed to create target directory for mount: %s", err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("Failed to stat directory: %s", err)
+	// Check if device is already mounted at location
+	checkPartCmd := "lsblk -n -o MOUNTPOINTS %s"
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(checkPartCmd, part.Path))
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("Failed to locate partition %s: %s", part.Path, err)
+	}
+	if strings.Contains(string(output), location) {
+		return nil
 	}
 
 	err = RunCommand(fmt.Sprintf(mountCmd, part.Path, location))

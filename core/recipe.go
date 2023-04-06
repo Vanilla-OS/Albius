@@ -236,7 +236,15 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		}
 	case "swapon":
 		partition := args[0].(string)
-		err := Swapon(targetRoot, localeCode)
+		err := Swapon(targetRoot, partition)
+		if err != nil {
+			return err
+		}
+	case "keyboard":
+		layout := args[0].(string)
+		model := args[1].(string)
+		variant := args[2].(string)
+		err := SetKeyboardLayout(targetRoot, layout, model, variant)
 		if err != nil {
 			return err
 		}

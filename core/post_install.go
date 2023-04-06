@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-// Set keyboard
-
 func SetTimezone(targetRoot, tz string) error {
 	tzPath := targetRoot + "/etc/timezone"
 
@@ -163,4 +161,31 @@ func Swapon(targetRoot, swapPart string) error {
 	} else {
 		return RunCommand(fmt.Sprintf(swaponCmd, swapPart))
 	}
+}
+
+func SetKeyboardLayout(targetRoot, kbLayout, kbModel, kbVariant string) error {
+	keyboardContents := `# KEYBOARD CONFIGURATION FILE
+# Consult the keyboard(5) manual page.
+XKBMODEL="%s"
+XKBLAYOUT="%s"
+XKBVARIANT="%s"
+BACKSPACE="guess"
+`
+
+	keyboardPath := targetRoot + "/etc/default/keyboard"
+	err := os.WriteFile(keyboardPath, []byte(fmt.Sprintf(keyboardContents, kbModel, kbLayout, kbVariant)), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to set keyboard layout: %s", err)
+	}
+
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, "setupcon")
+	} else {
+		err = RunCommand("setupcon")
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to set keyboard layout: %s", err)
+	}
+
+	return nil
 }

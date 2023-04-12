@@ -101,7 +101,7 @@ func UpdateInitramfs(root string) error {
 }
 
 func RunInChroot(root, command string) error {
-	cmd := exec.Command("chroot", root, "sh", "-c", command)
+	cmd := exec.Command("systemd-nspawn", "-D", root, "--", "sh", "-c", command)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

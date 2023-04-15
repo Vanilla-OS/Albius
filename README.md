@@ -1,10 +1,14 @@
-# Albius
+<div align="center">
+<img src="assets/albius.png?raw=true#gh-dark-mode-only" height="40">
+<img src="assets/albius-mono.png?raw=true#gh-light-mode-only" height="40">
 
+---
 Albius is a Linux installer backend originally designed for
 [Vanilla OS](https://vanillaos.org/), but capable of handling any Linux 
 distribution that uses either Squashfs or OCI images for distributing the base
 system. Albius is written entirely in Go and uses a recipe system (see "recipes"
 subsection) for describing operations, mountpoints and options.
+</div>
 
 ## Motivation
 

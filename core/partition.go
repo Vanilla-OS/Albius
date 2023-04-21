@@ -60,7 +60,19 @@ func PartitionFromPath(path string) (*Partition, error) {
 }
 
 func (part *Partition) Mount(location string) error {
-	// TODO: Handle crypto_LUKS filesystems
+	// Pass mount operation to cryptsetup if it's a LUKS-encrypted partition
+	luks, err := IsLuks(part)
+	if err != nil {
+		return err
+	}
+	if luks {
+		partUUID, err := part.GetUUID()
+		if err != nil {
+			return err
+		}
+		return LuksOpen(part, fmt.Sprintf("luks-%s", partUUID))
+	}
+
 	mountCmd := "mount -m %s %s"
 
 	// Check if device is already mounted at location
@@ -83,9 +95,22 @@ func (part *Partition) Mount(location string) error {
 }
 
 func (part *Partition) UmountPartition() error {
+	// Pass unmount operation to cryptsetup if it's a LUKS-encrypted partition
+	luks, err := IsLuks(part)
+	if err != nil {
+		return err
+	}
+	if luks {
+		partUUID, err := part.GetUUID()
+		if err != nil {
+			return err
+		}
+		return LuksClose(fmt.Sprintf("luks-%s", partUUID))
+	}
+
 	umountCmd := "umount %s"
 
-	err := RunCommand(fmt.Sprintf(umountCmd, part.Path))
+	err = RunCommand(fmt.Sprintf(umountCmd, part.Path))
 	if err != nil {
 		return fmt.Errorf("Failed to run umount command: %s", err)
 	}

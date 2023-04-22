@@ -72,7 +72,7 @@ func (part *Partition) Mount(location string) error {
 		if err != nil {
 			return err
 		}
-		err = LuksOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
+		err = LuksTryOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func (part *Partition) Mount(location string) error {
 		return nil
 	}
 
-	err = RunCommand(fmt.Sprintf(mountCmd, part.Path, mountPath))
+	err = RunCommand(fmt.Sprintf(mountCmd, mountPath, location))
 	if err != nil {
 		return fmt.Errorf("Failed to run mount command: %s", err)
 	}

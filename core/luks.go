@@ -24,8 +24,19 @@ func IsLuks(part *Partition) (bool, error) {
 	return true, nil
 }
 
-func LuksOpen(part *Partition, mapping string) error {
-	luksOpenCmd := "cryptsetup open %s %s"
+// LuksOpen opens a LUKS-encrypted partition, mapping the unencrypted filesystem
+// to /dev/mapper/<mapping>.
+// If password is an empty string, cryptsetup will prompt the password when
+// executed.
+func LuksOpen(part *Partition, mapping, password string) error {
+	var luksOpenCmd string
+	if password != "" {
+		luksOpenCmd = fmt.Sprintf("echo '%s' | ", password)
+	} else {
+		luksOpenCmd = ""
+	}
+
+	luksOpenCmd += "cryptsetup open %s %s"
 
 	err := RunCommand(fmt.Sprintf(luksOpenCmd, part.Path, mapping))
 	if err != nil {

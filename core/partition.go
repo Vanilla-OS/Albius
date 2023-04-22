@@ -60,6 +60,8 @@ func PartitionFromPath(path string) (*Partition, error) {
 }
 
 func (part *Partition) Mount(location string) error {
+	var mountPath string
+
 	// If it's a LUKS-encrypted partition, open it first
 	luks, err := IsLuks(part)
 	if err != nil {
@@ -75,26 +77,28 @@ func (part *Partition) Mount(location string) error {
 			return err
 		}
 
-		location, err = part.GetLUKSMapperPath()
+		mountPath, err = part.GetLUKSMapperPath()
 		if err != nil {
 			return err
 		}
+	} else {
+		mountPath = part.Path
 	}
 
 	mountCmd := "mount -m %s %s"
 
 	// Check if device is already mounted at location
 	checkPartCmd := "lsblk -n -o MOUNTPOINTS %s"
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(checkPartCmd, part.Path))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(checkPartCmd, mountPath))
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Failed to locate partition %s: %s", part.Path, err)
+		return fmt.Errorf("Failed to locate partition %s: %s", mountPath, err)
 	}
 	if strings.Contains(string(output), location) {
 		return nil
 	}
 
-	err = RunCommand(fmt.Sprintf(mountCmd, part.Path, location))
+	err = RunCommand(fmt.Sprintf(mountCmd, part.Path, mountPath))
 	if err != nil {
 		return fmt.Errorf("Failed to run mount command: %s", err)
 	}

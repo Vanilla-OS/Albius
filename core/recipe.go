@@ -117,6 +117,19 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			if err != nil {
 				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 			}
+			// lsblk seems to take a few milliseconds to update the partition's
+			// UUID, so we loop until it gives us one
+			uuid := ""
+			for uuid == "" {
+				uuid, err = part.GetUUID()
+			}
+			if err != nil {
+				return err
+			}
+			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
+			if err != nil {
+				return err
+			}
 			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
 			err = MakeFs(part)
 			if err != nil {

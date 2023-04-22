@@ -348,10 +348,30 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 	for _, mnt := range recipe.Mountpoints {
 		entry := []string{}
 
-		// Partition UUID
-		uuid, err := GetUUIDByPath(mnt.Partition)
+		// Read partition
+		partition, err := PartitionFromPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
+		}
+
+		// If partition is LUKS-encrypted, use /dev/mapper/xxxx, otherwise
+		// use the partition's UUID
+		var fsName string
+		luks, err := IsLuks(partition)
+		if err != nil {
+			return [][]string{}, err
+		}
+		if luks {
+			fsName, err = partition.GetLUKSMapperPath()
+			if err != nil {
+				return [][]string{}, err
+			}
+		} else {
+			uuid, err := GetUUIDByPath(mnt.Partition)
+			if err != nil {
+				return [][]string{}, err
+			}
+			fsName = fmt.Sprintf("UUID=%s", uuid)
 		}
 
 		// Partition fstype
@@ -371,7 +391,7 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 			options = "defaults"
 		}
 
-		entry = append(entry, fmt.Sprintf("UUID=%s", uuid))
+		entry = append(entry, fsName)
 		entry = append(entry, mnt.Target)
 		entry = append(entry, fstype)
 		entry = append(entry, options)
@@ -382,6 +402,37 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 	}
 
 	return fstabEntries, nil
+}
+
+func (recipe *Recipe) setupCrypttabEntries() ([][]string, error) {
+	crypttabEntries := [][]string{}
+	for _, mnt := range recipe.Mountpoints {
+		partition, err := PartitionFromPath(mnt.Partition)
+		if err != nil {
+			return [][]string{}, err
+		}
+		luks, err := IsLuks(partition)
+		if err != nil {
+			return [][]string{}, err
+		}
+		if !luks {
+			continue
+		}
+
+		entry := []string{}
+
+		partUUID, err := partition.GetUUID()
+		if err != nil {
+			return [][]string{}, err
+		}
+
+		entry = append(entry, fmt.Sprintf("luks-%s", partUUID)) // target
+		entry = append(entry, fmt.Sprintf("UUID=%s", partUUID)) // device
+		entry = append(entry, "none")                           // keyfile
+		entry = append(entry, "luks,discard")                   // options
+	}
+
+	return crypttabEntries, nil
 }
 
 func (recipe *Recipe) Install() error {
@@ -400,12 +451,23 @@ func (recipe *Recipe) Install() error {
 		return fmt.Errorf("Unsupported installation method '%s'", recipe.Installation.Method)
 	}
 
+	// Setup crypttab (if needed)
+	crypttabEntries, err := recipe.setupCrypttabEntries()
+	if err != nil {
+		return fmt.Errorf("Failed to generate crypttab entries: %s", err)
+	}
+	if len(crypttabEntries) > 0 {
+		err = GenCrypttab(RootA, crypttabEntries)
+		if err != nil {
+			return fmt.Errorf("Failed to generate crypttab: %s", err)
+		}
+	}
+
 	// Setup fstab
 	fstabEntries, err := recipe.setupFstabEntries()
 	if err != nil {
 		return fmt.Errorf("Failed to generate fstab entries: %s", err)
 	}
-
 	err = GenFstab(RootA, fstabEntries)
 	if err != nil {
 		return fmt.Errorf("Failed to generate fstab: %s", err)

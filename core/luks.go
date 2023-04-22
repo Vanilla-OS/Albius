@@ -2,7 +2,9 @@ package albius
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"strings"
 )
 
 func IsLuks(part *Partition) (bool, error) {
@@ -50,6 +52,25 @@ func LuksFormat(part *Partition, password string) error {
 	err := RunCommand(fmt.Sprintf(luksFormatCmd, password, part.Path))
 	if err != nil {
 		return fmt.Errorf("Failed to create LUKS-encrypted partition: %s", err)
+	}
+
+	return nil
+}
+
+func GenCrypttab(targetRoot string, entries [][]string) error {
+	file, err := os.Create(fmt.Sprintf("%s/etc/crypttab", targetRoot))
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	for _, entry := range entries {
+		fmtEntry := strings.Join(entry, " ")
+		_, err := file.Write(append([]byte(fmtEntry), '\n'))
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

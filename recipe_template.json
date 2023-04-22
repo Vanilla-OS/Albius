@@ -32,9 +32,10 @@
 			"operation": "mkpart",
 			"params": [
 				"a",
-				"btrfs",
+				"luks-btrfs",
 				1537,
-				13825
+				13825,
+				"MyVerySecureEncryptionPassword"
 			]
 		},
 		{
@@ -42,9 +43,10 @@
 			"operation": "mkpart",
 			"params": [
 				"b",
-				"btrfs",
+				"luks-btrfs",
 				13825,
-				26113
+				26113,
+				"MyVerySecureEncryptionPassword"
 			]
 		},
 		{
@@ -52,9 +54,10 @@
 			"operation": "mkpart",
 			"params": [
 				"home",
-				"btrfs",
+				"luks-btrfs",
 				26113,
-				-1
+				-1,
+				"MyVerySecureEncryptionPassword"
 			]
 		}
 	],

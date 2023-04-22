@@ -43,3 +43,14 @@ func LuksClose(mapping string) error {
 
 	return nil
 }
+
+func LuksFormat(part *Partition, password string) error {
+	luksFormatCmd := "echo '%s' | cryptsetup -q luksFormat %s"
+
+	err := RunCommand(fmt.Sprintf(luksFormatCmd, password, part.Path))
+	if err != nil {
+		return fmt.Errorf("Failed to create LUKS-encrypted partition: %s", err)
+	}
+
+	return nil
+}

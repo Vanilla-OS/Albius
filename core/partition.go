@@ -60,7 +60,7 @@ func PartitionFromPath(path string) (*Partition, error) {
 }
 
 func (part *Partition) Mount(location string) error {
-	// Pass mount operation to cryptsetup if it's a LUKS-encrypted partition
+	// If it's a LUKS-encrypted partition, open it first
 	luks, err := IsLuks(part)
 	if err != nil {
 		return err
@@ -70,7 +70,15 @@ func (part *Partition) Mount(location string) error {
 		if err != nil {
 			return err
 		}
-		return LuksOpen(part, fmt.Sprintf("luks-%s", partUUID))
+		err = LuksOpen(part, fmt.Sprintf("luks-%s", partUUID))
+		if err != nil {
+			return err
+		}
+
+		location, err = part.GetLUKSMapperPath()
+		if err != nil {
+			return err
+		}
 	}
 
 	mountCmd := "mount -m %s %s"
@@ -95,6 +103,8 @@ func (part *Partition) Mount(location string) error {
 }
 
 func (part *Partition) UmountPartition() error {
+	var mountTarget string
+
 	// Pass unmount operation to cryptsetup if it's a LUKS-encrypted partition
 	luks, err := IsLuks(part)
 	if err != nil {
@@ -105,12 +115,22 @@ func (part *Partition) UmountPartition() error {
 		if err != nil {
 			return err
 		}
-		return LuksClose(fmt.Sprintf("luks-%s", partUUID))
+		err = LuksClose(fmt.Sprintf("luks-%s", partUUID))
+		if err != nil {
+			return err
+		}
+
+		mountTarget, err = part.GetLUKSMapperPath()
+		if err != nil {
+			return err
+		}
+	} else {
+		mountTarget = part.Path
 	}
 
 	umountCmd := "umount %s"
 
-	err = RunCommand(fmt.Sprintf(umountCmd, part.Path))
+	err = RunCommand(fmt.Sprintf(umountCmd, mountTarget))
 	if err != nil {
 		return fmt.Errorf("Failed to run umount command: %s", err)
 	}
@@ -244,4 +264,21 @@ func GetFilesystemByPath(path string) (string, error) {
 	}
 
 	return string(output[:len(output)-1]), nil
+}
+
+func (part *Partition) GetLUKSMapperPath() (string, error) {
+	// Assert part is a LUKS partition
+	luks, err := IsLuks(part)
+	if err != nil {
+		return "", err
+	}
+	if !luks {
+		return "", fmt.Errorf("Cannot get mapper path for %s. Partition is not LUKS-formatted", part.Path)
+	}
+
+	partUUID, err := part.GetUUID()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("/dev/mapper/luks-%s", partUUID), nil
 }

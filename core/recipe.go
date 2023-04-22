@@ -107,9 +107,26 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		fsType := PartitionFs(args[1].(string))
 		start := args[2].(int64)
 		end := args[3].(int64)
-		_, err = disk.NewPartition(name, fsType, start, end)
-		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		if len(args) > 4 && strings.HasPrefix(string(fsType), "luks-") {
+			luksPassword := args[4].(string)
+			part, err := disk.NewPartition(name, "", start, end)
+			if err != nil {
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			}
+			err = LuksFormat(part, luksPassword)
+			if err != nil {
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			}
+			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
+			err = MakeFs(part)
+			if err != nil {
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			}
+		} else {
+			_, err := disk.NewPartition(name, fsType, start, end)
+			if err != nil {
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			}
 		}
 	case "rm":
 		partNum, err := strconv.Atoi(args[0].(string))

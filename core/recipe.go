@@ -434,6 +434,8 @@ func (recipe *Recipe) setupCrypttabEntries() ([][]string, error) {
 		entry = append(entry, fmt.Sprintf("UUID=%s", partUUID)) // device
 		entry = append(entry, "none")                           // keyfile
 		entry = append(entry, "luks,discard")                   // options
+
+		crypttabEntries = append(crypttabEntries, entry)
 	}
 
 	return crypttabEntries, nil

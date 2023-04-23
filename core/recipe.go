@@ -364,8 +364,7 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 	for _, mnt := range recipe.Mountpoints {
 		entry := []string{}
 
-		// Read partition
-		partition, err := PartitionFromPath(mnt.Partition)
+		uuid, err := GetUUIDByPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
@@ -373,20 +372,13 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 		// If partition is LUKS-encrypted, use /dev/mapper/xxxx, otherwise
 		// use the partition's UUID
 		var fsName string
-		luks, err := IsLuks(partition)
+		luks, err := IsPathLuks(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
 		if luks {
-			fsName, err = partition.GetLUKSMapperPath()
-			if err != nil {
-				return [][]string{}, err
-			}
+			fsName = fmt.Sprintf("/dev/mapper/luks-%s", uuid)
 		} else {
-			uuid, err := GetUUIDByPath(mnt.Partition)
-			if err != nil {
-				return [][]string{}, err
-			}
 			fsName = fmt.Sprintf("UUID=%s", uuid)
 		}
 
@@ -423,11 +415,7 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 func (recipe *Recipe) setupCrypttabEntries() ([][]string, error) {
 	crypttabEntries := [][]string{}
 	for _, mnt := range recipe.Mountpoints {
-		partition, err := PartitionFromPath(mnt.Partition)
-		if err != nil {
-			return [][]string{}, err
-		}
-		luks, err := IsLuks(partition)
+		luks, err := IsPathLuks(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
@@ -437,7 +425,7 @@ func (recipe *Recipe) setupCrypttabEntries() ([][]string, error) {
 
 		entry := []string{}
 
-		partUUID, err := partition.GetUUID()
+		partUUID, err := GetUUIDByPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}

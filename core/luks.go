@@ -26,6 +26,13 @@ func IsLuks(part *Partition) (bool, error) {
 	return true, nil
 }
 
+func IsPathLuks(path string) (bool, error) {
+	dummyPartition := Partition{}
+	dummyPartition.Path = path
+
+	return IsLuks(&dummyPartition)
+}
+
 // LuksOpen opens a LUKS-encrypted partition, mapping the unencrypted filesystem
 // to /dev/mapper/<mapping>.
 // If password is an empty string, cryptsetup will prompt the password when

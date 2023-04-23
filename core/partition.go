@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -30,33 +29,6 @@ type Partition struct {
 	Number                       int
 	Start, End, Size, Type, Path string
 	Filesystem                   PartitionFs
-}
-
-func PartitionFromPath(path string) (*Partition, error) {
-	newPartition := Partition{}
-	newPartition.Path = path
-
-	partInfoCmd := "parted -ms %s unit MiB print | sed '3p;d'"
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(partInfoCmd, path))
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to fetch partition %s: %s", path, err)
-	}
-
-	outSplits := strings.Split(string(output), ":")
-
-	numberInt, err := strconv.Atoi(outSplits[0])
-	if err != nil {
-		return nil, err
-	}
-	newPartition.Number = numberInt
-
-	newPartition.Start = outSplits[1]
-	newPartition.End = outSplits[2]
-	newPartition.Size = outSplits[3]
-	newPartition.Filesystem = PartitionFs(outSplits[4])
-
-	return &newPartition, nil
 }
 
 func (part *Partition) Mount(location string) error {

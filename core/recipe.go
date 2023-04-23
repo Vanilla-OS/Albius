@@ -124,11 +124,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 				uuid, err = part.GetUUID()
 			}
 			if err != nil {
-				return err
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 			}
 			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
-				return err
+				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 			}
 			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
 			err = MakeFs(part)
@@ -350,7 +350,10 @@ func (recipe *Recipe) SetupMountpoints() error {
 			rootAMounted = true
 		}
 
-		disk.Partitions[partInt-1].Mount(baseRoot + mnt.Target)
+		err = disk.Partitions[partInt-1].Mount(baseRoot + mnt.Target)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

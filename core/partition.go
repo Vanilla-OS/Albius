@@ -235,7 +235,7 @@ func (target *Partition) FillPath(basePath string) {
 }
 
 func (target *Partition) GetUUID() (string, error) {
-	lsblkCmd := "lsblk -n -o UUID %s"
+	lsblkCmd := "lsblk -n -o UUID %s | sed '1p;d'"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, target.Path))
 	output, err := cmd.Output()
@@ -247,7 +247,7 @@ func (target *Partition) GetUUID() (string, error) {
 }
 
 func GetUUIDByPath(path string) (string, error) {
-	lsblkCmd := "lsblk -n -o UUID %s"
+	lsblkCmd := "lsblk -n -o UUID %s | sed '1p;d'"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()
@@ -259,7 +259,7 @@ func GetUUIDByPath(path string) (string, error) {
 }
 
 func GetFilesystemByPath(path string) (string, error) {
-	lsblkCmd := "lsblk -n -o FSTYPE %s"
+	lsblkCmd := "lsblk -n -o FSTYPE %s | sed '1p;d'"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()

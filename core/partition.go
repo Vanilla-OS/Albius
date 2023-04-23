@@ -72,7 +72,7 @@ func (part *Partition) Mount(location string) error {
 		if err != nil {
 			return err
 		}
-		err = LuksOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
+		err = LuksTryOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
 		if err != nil {
 			return err
 		}

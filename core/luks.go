@@ -60,8 +60,10 @@ func LuksTryOpen(part *Partition, mapping, password string) error {
 	_, err := os.Stat(fmt.Sprintf("/dev/mapper/%s", mapping))
 	if err == nil { // Mapping exists, do nothing
 		return nil
-	} else {
+	} else if os.IsNotExist(err) {
 		return LuksOpen(part, mapping, password)
+	} else {
+		return fmt.Errorf("Failed to try-open LUKS-encrypted partition: %s", err)
 	}
 }
 

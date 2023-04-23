@@ -30,6 +30,8 @@ func IsLuks(part *Partition) (bool, error) {
 // to /dev/mapper/<mapping>.
 // If password is an empty string, cryptsetup will prompt the password when
 // executed.
+// WARNING: This function will return an error if mapping already exists, use
+// LuksTryOpen() to open a device while ignoring existing mappings
 func LuksOpen(part *Partition, mapping, password string) error {
 	var luksOpenCmd string
 	if password != "" {
@@ -46,6 +48,21 @@ func LuksOpen(part *Partition, mapping, password string) error {
 	}
 
 	return nil
+}
+
+// LuksTryOpen opens a LUKS-encrypted partition, failing silently if mapping
+// already exists.
+// This is useful for when we pass a mapping like "luks-<uuid>", which we are
+// certain is unique and the operation failing means that the device is already
+// open.
+// The function still returns other errors, however.
+func LuksTryOpen(part *Partition, mapping, password string) error {
+	_, err := os.Stat(fmt.Sprintf("/dev/mapper/%s", mapping))
+	if err == nil { // Mapping exists, do nothing
+		return nil
+	} else {
+		return LuksOpen(part, mapping, password)
+	}
 }
 
 func LuksClose(mapping string) error {

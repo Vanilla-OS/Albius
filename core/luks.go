@@ -114,3 +114,15 @@ func GenCrypttab(targetRoot string, entries [][]string) error {
 
 	return nil
 }
+
+func GetLUKSFilesystemByPath(path string) (string, error) {
+	lsblkCmd := "lsblk -n -o FSTYPE %s | sed '2p;d'"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get encrypted partition FSTYPE: %s", err)
+	}
+
+	return string(output[:len(output)-1]), nil
+}

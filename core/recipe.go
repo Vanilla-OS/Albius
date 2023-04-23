@@ -369,6 +369,12 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 			return [][]string{}, err
 		}
 
+		// Partition fstype
+		fstype, err := GetFilesystemByPath(mnt.Partition)
+		if err != nil {
+			return [][]string{}, err
+		}
+
 		// If partition is LUKS-encrypted, use /dev/mapper/xxxx, otherwise
 		// use the partition's UUID
 		var fsName string
@@ -378,14 +384,13 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 		}
 		if luks {
 			fsName = fmt.Sprintf("/dev/mapper/luks-%s", uuid)
+			encryptedFstype, err := GetLUKSFilesystemByPath(mnt.Partition)
+			if err != nil {
+				return [][]string{}, err
+			}
+			fstype = encryptedFstype
 		} else {
 			fsName = fmt.Sprintf("UUID=%s", uuid)
-		}
-
-		// Partition fstype
-		fstype, err := GetFilesystemByPath(mnt.Partition)
-		if err != nil {
-			return [][]string{}, err
 		}
 
 		// Partition options

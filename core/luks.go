@@ -116,7 +116,7 @@ func GenCrypttab(targetRoot string, entries [][]string) error {
 }
 
 func GetLUKSFilesystemByPath(path string) (string, error) {
-	lsblkCmd := "lsblk -d -n -o FSTYPE %s"
+	lsblkCmd := "lsblk -n -o FSTYPE %s | sed '/crypto_LUKS/d'"
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()

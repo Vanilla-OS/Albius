@@ -134,6 +134,12 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 	return nil
 }
 
+// NewPartition creates a new partition on Disk with the provided name,
+// filesystem type, and start and end locations.
+//
+// If fsType is an empty string, the function will skip creating the filesystem.
+// This can be useful when creating LUKS-encrypted partitions, where the format
+// operation needs to be executed first.
 func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int64) (*Partition, error) {
 	createPartCmd := "parted -s %s unit MiB mkpart%s \"%s\" %s %d %s"
 
@@ -164,8 +170,13 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	newPartition := &target.Partitions[len(target.Partitions)-1]
 	newPartition.FillPath(target.Path)
 
-	newPartition.Filesystem = fsType
-	MakeFs(newPartition)
+	if fsType != "" {
+		newPartition.Filesystem = fsType
+		err := MakeFs(newPartition)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	err = newPartition.NamePartition(name)
 	if err != nil {

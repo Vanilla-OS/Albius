@@ -276,6 +276,54 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if err != nil {
 			return err
 		}
+	case "grub-install":
+		bootDirectory := args[0].(string)
+		installDevice := args[1].(string)
+		target := args[2].(string)
+		var grubTarget FirmwareType
+		switch target {
+		case "bios":
+			grubTarget = BIOS
+		case "efi":
+			grubTarget = EFI
+		default:
+			return fmt.Errorf("Failed to execute operation: %s: Unrecognized firmware type: '%s')", operation, target)
+		}
+		err := RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget)
+		if err != nil {
+			return err
+		}
+	case "grub-default-config":
+		currentConfig, err := GetGrubConfig(targetRoot)
+		if err != nil {
+			return err
+		}
+		for _, arg := range args {
+			kv := strings.SplitN(arg.(string), "=", 2)
+			currentConfig[kv[0]] = kv[1]
+		}
+		err = WriteGrubConfig(targetRoot, currentConfig)
+		if err != nil {
+			return err
+		}
+	case "grub-add-script":
+		scriptPath := args[0].(string)
+		err := AddGrubScript(targetRoot, scriptPath)
+		if err != nil {
+			return err
+		}
+	case "grub-remove-script":
+		scriptName := args[0].(string)
+		err := RemoveGrubScript(targetRoot, scriptName)
+		if err != nil {
+			return err
+		}
+	case "grub-mkconfig":
+		outputPath := args[0].(string)
+		err := RunGrubMkconfig(targetRoot, outputPath)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

@@ -30,6 +30,7 @@ func SetTimezone(targetRoot, tz string) error {
 }
 
 func AddUser(targetRoot, username, fullname string, groups []string, withPassword bool, password ...string) error {
+	// TODO: "adduser" isn't distro agnostic. Change to "useradd"?
 	adduserCmd := "adduser --quiet --disabled-password --shell /bin/bash --gecos \"%s\" %s"
 
 	var err error

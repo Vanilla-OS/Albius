@@ -122,6 +122,31 @@
 			"params": [
 				"vanilla"
 			]
+		},
+		{
+			"chroot": true,
+			"operation": "grub-install",
+			"params": [
+				"/boot",
+				"/dev/sda",
+				"efi"
+			]
+		},
+		{
+			"chroot": true,
+			"operation": "grub-default-config",
+			"params": [
+				"GRUB_TIMEOUT=0",
+				"GRUB_HIDDEN_TIMEOUT=2",
+				"GRUB_TIMEOUT_STYLE=hidden"
+			]
+		},
+		{
+			"chroot": true,
+			"operation": "grub-mkconfig",
+			"params": [
+				"/boot/grub/grub.cfg"
+			]
 		}
 	]
 }

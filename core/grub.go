@@ -93,6 +93,18 @@ func RemoveGrubScript(targetRoot, scriptName string) error {
 }
 
 func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareType) error {
+	// Mount necessary targets for chroot
+	if targetRoot != "" {
+		requiredBinds := []string{ "/dev", "/dev/pts", "/proc", "/sys", "/run" }
+		for _, bind := range requiredBinds {
+			targetBind := filepath.Join(targetRoot, bind)
+			err := RunCommand(fmt.Sprintf("mount --bind %s %s", bind, targetBind))
+			if err != nil {
+				return fmt.Errorf("Failed to mount %s to %s: %s", bind, targetRoot, err)
+			}
+		}
+	}
+
 	grubInstallCmd := "grub-install --boot-directory %s --target=%s %s"
 
 	err := RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))

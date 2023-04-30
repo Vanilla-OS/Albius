@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
-	"github.com/containers/storage/pkg/reexec"
 	"github.com/vanilla-os/prometheus"
 )
 
@@ -116,11 +116,7 @@ func RunInChroot(root, command string) error {
 }
 
 func OCISetup(imageSource, destination string, verbose bool) error {
-	if reexec.Init() { // needed for subprocesses
-		return fmt.Errorf("Failed to initialize reexec")
-	}
-
-	pmt, err := prometheus.NewPrometheus("storage", "overlay")
+	pmt, err := prometheus.NewPrometheus(filepath.Join(destination, "storage"), "overlay")
 	if err != nil {
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
 	}
@@ -147,24 +143,26 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 
 	// Rsync image into destination
 	fmt.Printf("Copying image to %s\n", destination)
+
 	var verboseFlag string
 	if verbose {
 		verboseFlag = "v"
 	} else {
 		verboseFlag = ""
 	}
-	err = RunCommand(fmt.Sprintf("rsync -a%sxHAX %s %s", verboseFlag, mountPoint, destination))
+	mergedFs := filepath.Join(mountPoint, "merged")
+	err = RunCommand(fmt.Sprintf("rsync -a%sxHAX %s %s", verboseFlag, mergedFs, destination))
 	if err != nil {
 		return fmt.Errorf("Failed to sync image contents to %s: %s", destination, err)
 	}
 
-	unmountResult, err := pmt.UnMountImage(mountPoint, false)
-	if err != nil {
-		return fmt.Errorf("Error when unmounting image at %s: %s", mountPoint, err)
-	}
-	if !unmountResult {
-		return fmt.Errorf("Could not unmount image at %s", mountPoint)
-	}
+	// unmountResult, err := pmt.UnMountImage(mountPoint, false)
+	// if err != nil {
+	// 	return fmt.Errorf("Error when unmounting image at %s: %s", mountPoint, err)
+	// }
+	// if !unmountResult {
+	// 	return fmt.Errorf("Could not unmount image at %s", mountPoint)
+	// }
 
 	return nil
 }

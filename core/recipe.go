@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/vanilla-os/oci"
 )
 
 const (
@@ -454,7 +452,7 @@ func (recipe *Recipe) Install() error {
 			return err
 		}
 	case OCI:
-		err := oci.Write(recipe.Installation.Source, RootA)
+		err := OCISetup(recipe.Installation.Source, RootA, false)
 		if err != nil {
 			return err
 		}

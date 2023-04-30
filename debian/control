@@ -4,6 +4,9 @@ Priority: extra
 Maintainer: Mateus Melchiades <matbme@duck.com>
 Uploaders: Mateus Melchiades <matbme@duck.com>
 Build-Depends: debhelper (>= 9),
+               libbtrfs-dev,
+               libdevmapper-dev,
+               libgpgme-dev,
                dh-golang,
                golang-go
 Standards-Version: 3.9.6

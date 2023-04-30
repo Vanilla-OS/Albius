@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/containers/storage/pkg/reexec"
+	"github.com/vanilla-os/prometheus"
 )
 
 func Unsquashfs(filesystem, destination string, force bool) error {
@@ -122,6 +125,60 @@ func RunInChroot(root, command string) error {
 	err := cmd.Run()
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func OCISetup(imageSource, destination string, verbose bool) error {
+	if reexec.Init() { // needed for subprocesses
+		return fmt.Errorf("Failed to initialize reexec")
+	}
+
+	pmt, err := prometheus.NewPrometheus("storage", "overlay")
+	if err != nil {
+		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
+	}
+
+	storedImageName := strings.ReplaceAll(imageSource, "/", "-")
+	manifest, err := pmt.PullImage(imageSource, storedImageName)
+	if err != nil {
+		return fmt.Errorf("Failed to pull OCI image: %s", err)
+	}
+
+	fmt.Printf("Image pulled with digest %s\n", manifest.Config.Digest)
+
+	image, err := pmt.GetImageByDigest(manifest.Config.Digest)
+	if err != nil {
+		return fmt.Errorf("Failed to get image from digest: %s", err)
+	}
+
+	mountPoint, err := pmt.MountImage(image.TopLayer)
+	if err != nil {
+		return fmt.Errorf("Failed to mount image at %s: %s", image.TopLayer, err)
+	}
+
+	fmt.Printf("Image mounted at %s\n", mountPoint)
+
+	// Rsync image into destination
+	fmt.Printf("Copying image to %s\n", destination)
+	var verboseFlag string
+	if verbose {
+		verboseFlag = "v"
+	} else {
+		verboseFlag = ""
+	}
+	err = RunCommand(fmt.Sprintf("rsync -a%sxHAX %s %s", verboseFlag, mountPoint, destination))
+	if err != nil {
+		return fmt.Errorf("Failed to sync image contents to %s: %s", destination, err)
+	}
+
+	unmountResult, err := pmt.UnMountImage(mountPoint, false)
+	if err != nil {
+		return fmt.Errorf("Error when unmounting image at %s: %s", mountPoint, err)
+	}
+	if !unmountResult {
+		return fmt.Errorf("Could not unmount image at %s", mountPoint)
 	}
 
 	return nil

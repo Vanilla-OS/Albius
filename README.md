@@ -118,6 +118,30 @@ following options: whether the operation should run on the installed system
 Creates the user "albius" with the display name "Albius" that belongs to the
 "sudo" and "lpadmin" groups and authenticates with "ASuperStrongPassword".
 
+## Building
+
+Some system dependencies are required for building Albius:
+- `libbtrfs-dev`
+- `libdevmapper-dev`
+- `libgpgme-dev`
+
+After the packages listed above have been installed, all that's left to do is
+run:
+
+```sh
+$ go build
+```
+
+## Running
+
+Albius accepts only one positional argument, which is the path for the recipe
+it should use to install the system. Remember to always run the binary with
+elevated privileges like in the example below:
+
+```sh
+$ sudo albius <path_for_recipe.json>
+```
+
 ## FAQ
 
 ### Can I use this installer with an A/B root-switching structure?

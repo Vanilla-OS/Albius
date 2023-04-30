@@ -178,12 +178,12 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		if err != nil {
 			return nil, err
 		}
-	}
 
-	// Label partition with name
-	err = newPartition.SetLabel(name)
-	if err != nil {
-		return nil, err
+		// Label partition with name
+		err = newPartition.SetLabel(name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = newPartition.NamePartition(name)

@@ -150,10 +150,15 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 	} else {
 		verboseFlag = ""
 	}
-	mergedFs := filepath.Join(mountPoint, "merged")
-	err = RunCommand(fmt.Sprintf("rsync -a%sxHAX %s %s", verboseFlag, mergedFs, destination))
+	err = RunCommand(fmt.Sprintf("rsync -a%sxHAX --numeric-ids %s/ %s/", verboseFlag, mountPoint, destination))
 	if err != nil {
 		return fmt.Errorf("Failed to sync image contents to %s: %s", destination, err)
+	}
+
+	// Remove storage from destination
+	err = os.RemoveAll(filepath.Join(destination, "storage"))
+	if err != nil {
+		return fmt.Errorf("Failed to remove storage from %s: %s", destination, err)
 	}
 
 	// unmountResult, err := pmt.UnMountImage(mountPoint, false)

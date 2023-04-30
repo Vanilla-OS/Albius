@@ -32,44 +32,29 @@ func Unsquashfs(filesystem, destination string, force bool) error {
 }
 
 func MakeFs(part *Partition) error {
-	luks, err := IsLuks(part)
-
-	if err != nil {
-		return err
-	}
-
-	var target string
-	if luks {
-		target, err = part.GetLUKSMapperPath()
-		if err != nil {
-			return err
-		}
-	} else {
-		target = part.Path
-	}
-
+	var err error
 	switch part.Filesystem {
 	case FAT16:
 		makefsCmd := "mkfs.fat -I -F 16 %s"
-		err = RunCommand(fmt.Sprintf(makefsCmd, target))
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case FAT32:
 		makefsCmd := "mkfs.fat -I -F 32 %s"
-		err = RunCommand(fmt.Sprintf(makefsCmd, target))
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case EXT2, EXT3, EXT4:
 		makefsCmd := "mkfs.%s -F %s"
-		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, target))
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, part.Path))
 	case LINUX_SWAP:
 		makefsCmd := "mkswap -f %s"
-		err = RunCommand(fmt.Sprintf(makefsCmd, target))
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Path))
 	case HFS, HFS_PLUS, UDF:
 		return fmt.Errorf("Unsupported filesystem: %s", part.Filesystem)
 	default:
 		makefsCmd := "mkfs.%s -f %s"
-		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, target))
+		err = RunCommand(fmt.Sprintf(makefsCmd, part.Filesystem, part.Path))
 	}
 
 	if err != nil {
-		return fmt.Errorf("Failed to make %s filesystem for %s: %s", part.Filesystem, target, err)
+		return fmt.Errorf("Failed to make %s filesystem for %s: %s", part.Filesystem, part.Path, err)
 	}
 
 	return nil

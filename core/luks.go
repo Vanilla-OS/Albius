@@ -126,3 +126,18 @@ func GetLUKSFilesystemByPath(path string) (string, error) {
 
 	return string(output[:len(output)-1]), nil
 }
+
+// LUKSMakeFs creates a filesystem inside of a LUKS-formatted partition. Use
+// this instead of MakeFs when setting up encrypted filesystems.
+func LUKSMakeFs(part *Partition) error {
+	innerPartition := Partition{}
+
+	partUUID, err := part.GetUUID()
+	if err != nil {
+		return err
+	}
+	innerPartition.Path = fmt.Sprintf("/dev/mapper/luks-%s", partUUID)
+	innerPartition.Filesystem = part.Filesystem
+
+	return MakeFs(&innerPartition)
+}

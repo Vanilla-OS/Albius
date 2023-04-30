@@ -129,7 +129,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 			}
 			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
-			err = MakeFs(part)
+			err = LUKSMakeFs(part)
 			if err != nil {
 				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 			}

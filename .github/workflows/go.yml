@@ -18,6 +18,11 @@ jobs:
       with:
         go-version: 1.19
 
+    - name: Install build dependencies
+      run: |
+      apt-get update && apt-get upgrade -y
+      apt-get install -y libbtrfs-dev libdevmapper-dev libgpgme-dev
+
     - name: Build
       run: go build -v ./...
 

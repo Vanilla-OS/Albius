@@ -33,7 +33,7 @@ func GetGrubConfig(targetRoot string) (GrubConfig, error) {
 
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
-		if line[0] != '#' && line != "" {
+		if line != "" && line[0] != '#' {
 			kv := strings.SplitN(line, "=", 2)
 			config[kv[0]] = kv[1]
 		}
@@ -97,7 +97,7 @@ func RemoveGrubScript(targetRoot, scriptName string) error {
 func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareType) error {
 	// Mount necessary targets for chroot
 	if targetRoot != "" {
-		requiredBinds := []string{ "/dev", "/dev/pts", "/proc", "/sys", "/run" }
+		requiredBinds := []string{"/dev", "/dev/pts", "/proc", "/sys", "/run"}
 		for _, bind := range requiredBinds {
 			targetBind := filepath.Join(targetRoot, bind)
 			err := RunCommand(fmt.Sprintf("mount --bind %s %s", bind, targetBind))

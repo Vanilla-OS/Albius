@@ -69,7 +69,7 @@ func AddGrubScript(targetRoot, scriptPath string) error {
 		return fmt.Errorf("Failed to read GRUB script at %s: %s", scriptPath, err)
 	}
 
-	targetRootPath := filepath.Join(targetRoot, scriptPath)
+	targetRootPath := filepath.Join(targetRoot, "/etc/grub.d", filepath.Base(scriptPath))
 	err = os.WriteFile(targetRootPath, contents, 0755) // Grub expects script to be executable
 	if err != nil {
 		return fmt.Errorf("Failed to writing GRUB script to %s: %s", targetRootPath, err)

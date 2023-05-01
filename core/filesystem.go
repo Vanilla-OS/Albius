@@ -156,18 +156,15 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 	}
 
 	// Remove storage from destination
+	err = RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", destination))
+	if err != nil {
+		return fmt.Errorf("Failed to unmount image: %s", err)
+	}
+
 	err = os.RemoveAll(filepath.Join(destination, "storage"))
 	if err != nil {
 		return fmt.Errorf("Failed to remove storage from %s: %s", destination, err)
 	}
-
-	// unmountResult, err := pmt.UnMountImage(mountPoint, false)
-	// if err != nil {
-	// 	return fmt.Errorf("Error when unmounting image at %s: %s", mountPoint, err)
-	// }
-	// if !unmountResult {
-	// 	return fmt.Errorf("Could not unmount image at %s", mountPoint)
-	// }
 
 	return nil
 }

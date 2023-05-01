@@ -33,8 +33,10 @@ func GetGrubConfig(targetRoot string) (GrubConfig, error) {
 
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
-		kv := strings.SplitN(line, "=", 2)
-		config[kv[0]] = kv[1]
+		if line[0] != '#' && line != "" {
+			kv := strings.SplitN(line, "=", 2)
+			config[kv[0]] = kv[1]
+		}
 	}
 
 	return config, nil

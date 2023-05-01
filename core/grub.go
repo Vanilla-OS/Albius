@@ -109,7 +109,12 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 
 	grubInstallCmd := "grub-install --boot-directory %s --target=%s %s"
 
-	err := RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+	var err error
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+	} else {
+		err = RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+	}
 	if err != nil {
 		return fmt.Errorf("Failed to run grub-install: %s", err)
 	}
@@ -120,7 +125,12 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 func RunGrubMkconfig(targetRoot, output string) error {
 	grubMkconfigCmd := "grub-mkconfig -o %s"
 
-	err := RunInChroot(targetRoot, fmt.Sprintf(grubMkconfigCmd, output))
+	var err error
+	if targetRoot != "" {
+		err = RunInChroot(targetRoot, fmt.Sprintf(grubMkconfigCmd, output))
+	} else {
+		err = RunCommand(fmt.Sprintf(grubMkconfigCmd, output))
+	}
 	if err != nil {
 		return err
 	}

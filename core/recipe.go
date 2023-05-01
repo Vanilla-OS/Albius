@@ -311,16 +311,20 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			return err
 		}
 	case "grub-add-script":
-		scriptPath := args[0].(string)
-		err := AddGrubScript(targetRoot, scriptPath)
-		if err != nil {
-			return err
+		for _, arg := range args {
+			scriptPath := arg.(string)
+			err := AddGrubScript(targetRoot, scriptPath)
+			if err != nil {
+				return err
+			}
 		}
 	case "grub-remove-script":
-		scriptName := args[0].(string)
-		err := RemoveGrubScript(targetRoot, scriptName)
-		if err != nil {
-			return err
+		for _, arg := range args {
+			scriptName := arg.(string)
+			err := RemoveGrubScript(targetRoot, scriptName)
+			if err != nil {
+				return err
+			}
 		}
 	case "grub-mkconfig":
 		outputPath := args[0].(string)

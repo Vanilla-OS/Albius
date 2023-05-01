@@ -185,6 +185,23 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
+	case "luks-format":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		filesystem := args[1].(string)
+		password := args[2].(string)
+		part := disk.Partitions[partNum-1]
+		part.Filesystem = PartitionFs(filesystem)
+		err = LuksFormat(&part, password)
+		if err != nil {
+			return err
+		}
+		err = LUKSMakeFs(&part)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

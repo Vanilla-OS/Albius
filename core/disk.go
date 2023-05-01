@@ -162,6 +162,7 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
 
+	// Update partition list because we made changes to the disk
 	err = target.Update()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
@@ -170,9 +171,16 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	newPartition := &target.Partitions[len(target.Partitions)-1]
 	newPartition.FillPath(target.Path)
 
+	// Create filesystem
 	if fsType != "" {
 		newPartition.Filesystem = fsType
 		err := MakeFs(newPartition)
+		if err != nil {
+			return nil, err
+		}
+
+		// Label partition with name
+		err = newPartition.SetLabel(name)
 		if err != nil {
 			return nil, err
 		}

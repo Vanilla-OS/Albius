@@ -141,3 +141,18 @@ func LUKSMakeFs(part *Partition) error {
 
 	return MakeFs(&innerPartition)
 }
+
+// LUKSSetLabel labels a LUKS-formatted partition. Use this instead of SetLabel
+// when setting up encrypted filesystems.
+func LUKSSetLabel(part *Partition, name string) error {
+	innerPartition := Partition{}
+
+	partUUID, err := part.GetUUID()
+	if err != nil {
+		return err
+	}
+	innerPartition.Path = fmt.Sprintf("/dev/mapper/luks-%s", partUUID)
+	innerPartition.Filesystem = part.Filesystem
+
+	return innerPartition.SetLabel(name)
+}

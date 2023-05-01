@@ -258,3 +258,32 @@ func (part *Partition) GetLUKSMapperPath() (string, error) {
 	}
 	return fmt.Sprintf("/dev/mapper/luks-%s", partUUID), nil
 }
+
+func (part *Partition) SetLabel(label string) error {
+	var labelCmd string
+	switch part.Filesystem {
+	case FAT16, FAT32:
+		labelCmd = fmt.Sprintf("fatlabel %s %s", part.Path, label)
+	case EXT2, EXT3, EXT4:
+		labelCmd = fmt.Sprintf("e2label %s %s", part.Path, label)
+	case BTRFS:
+		labelCmd = fmt.Sprintf("btrfs filesystem label %s %s", part.Path, label)
+	case REISERFS:
+		labelCmd = fmt.Sprintf("reiserfstune –l %s %s", label, part.Path)
+	case XFS:
+		labelCmd = fmt.Sprintf("xfs_admin -L %s %s", label, part.Path)
+	case LINUX_SWAP:
+		return nil // There's no way to rename swap after it has been created
+	case NTFS:
+		labelCmd = fmt.Sprintf("ntfslabel %s %s", part.Path, label)
+	default:
+		return fmt.Errorf("Unsupported filesystem: %s", part.Filesystem)
+	}
+
+	err := RunCommand(labelCmd)
+	if err != nil {
+		return fmt.Errorf("Failed to label partition %s: %s", part.Path, err)
+	}
+
+	return nil
+}

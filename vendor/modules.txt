@@ -187,8 +187,6 @@ github.com/cyberphone/json-canonicalization/go/src/webpki.org/jsoncanonicalizer
 # github.com/cyphar/filepath-securejoin v0.2.3
 ## explicit; go 1.13
 github.com/cyphar/filepath-securejoin
-# github.com/docker/cli v20.10.20+incompatible
-## explicit
 # github.com/docker/distribution v2.8.1+incompatible
 ## explicit
 github.com/docker/distribution/digestset
@@ -250,10 +248,10 @@ github.com/go-openapi/jsonreference/internal
 # github.com/go-openapi/loads v0.21.2
 ## explicit; go 1.13
 github.com/go-openapi/loads
-# github.com/go-openapi/runtime v0.25.0
+# github.com/go-openapi/runtime v0.26.0
 ## explicit; go 1.18
 github.com/go-openapi/runtime
-# github.com/go-openapi/spec v0.20.8
+# github.com/go-openapi/spec v0.20.9
 ## explicit; go 1.13
 github.com/go-openapi/spec
 # github.com/go-openapi/strfmt v0.21.7
@@ -281,7 +279,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/go-containerregistry v0.13.0
+# github.com/google/go-containerregistry v0.14.0
 ## explicit; go 1.18
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/go-intervals v0.0.2
@@ -308,8 +306,6 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
-# github.com/kennygrant/sanitize v1.2.4
-## explicit
 # github.com/klauspost/compress v1.16.4
 ## explicit; go 1.18
 github.com/klauspost/compress
@@ -348,8 +344,6 @@ github.com/miekg/pkcs11
 # github.com/mistifyio/go-zfs/v3 v3.0.0
 ## explicit; go 1.14
 github.com/mistifyio/go-zfs/v3
-# github.com/mitchellh/go-homedir v1.1.0
-## explicit
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure
@@ -400,10 +394,10 @@ github.com/rivo/uniseg
 # github.com/sigstore/fulcio v1.2.0
 ## explicit; go 1.20
 github.com/sigstore/fulcio/pkg/certificate
-# github.com/sigstore/rekor v1.1.0
+# github.com/sigstore/rekor v1.1.1
 ## explicit; go 1.19
 github.com/sigstore/rekor/pkg/generated/models
-# github.com/sigstore/sigstore v1.6.0
+# github.com/sigstore/sigstore v1.6.3
 ## explicit; go 1.18
 github.com/sigstore/sigstore/pkg/cryptoutils
 github.com/sigstore/sigstore/pkg/signature
@@ -436,8 +430,6 @@ github.com/ulikunitz/xz
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
-# github.com/vanilla-os/oci v0.0.0-20230303134159-8c9176212032
-## explicit; go 1.19
 # github.com/vanilla-os/prometheus v0.1.2
 ## explicit; go 1.19
 github.com/vanilla-os/prometheus
@@ -474,7 +466,7 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/crypto v0.7.0
+# golang.org/x/crypto v0.8.0
 ## explicit; go 1.17
 golang.org/x/crypto/cast5
 golang.org/x/crypto/ed25519
@@ -497,10 +489,10 @@ golang.org/x/crypto/sha3
 golang.org/x/exp/constraints
 golang.org/x/exp/maps
 golang.org/x/exp/slices
-# golang.org/x/mod v0.9.0
+# golang.org/x/mod v0.10.0
 ## explicit; go 1.17
 golang.org/x/mod/semver
-# golang.org/x/net v0.8.0
+# golang.org/x/net v0.9.0
 ## explicit; go 1.17
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -522,21 +514,22 @@ golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.6.0
+# golang.org/x/term v0.7.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.8.0
+# golang.org/x/text v0.9.0
 ## explicit; go 1.17
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.6.0
+# golang.org/x/tools v0.7.0
 ## explicit; go 1.18
 golang.org/x/tools/cmd/stringer
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/packages
+golang.org/x/tools/go/types/objectpath
 golang.org/x/tools/internal/event
 golang.org/x/tools/internal/event/core
 golang.org/x/tools/internal/event/keys
@@ -548,7 +541,7 @@ golang.org/x/tools/internal/pkgbits
 golang.org/x/tools/internal/tokeninternal
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
-# google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4
+# google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.54.0

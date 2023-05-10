@@ -10,8 +10,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container:
-      image: registry.vanillaos.org/vanillaos/pico:main
+    container: registry.vanillaos.org/vanillaos/pico:main
       
     steps:
     - uses: actions/checkout@v3

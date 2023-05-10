@@ -10,6 +10,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    container:
+      image: registry.vanillaos.org/vanillaos/pico:main
+      
     steps:
     - uses: actions/checkout@v3
 
@@ -20,8 +23,8 @@ jobs:
 
     - name: Install build dependencies
       run: |
-          sudo apt-get update && sudo apt-get upgrade -y
-          sudo apt-get install -y libbtrfs-dev libdevmapper-dev libgpgme-dev
+          apt-get update
+          apt-get install -y libbtrfs-dev libdevmapper-dev libgpgme-dev
 
     - name: Build
       run: go build -v ./...

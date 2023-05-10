@@ -19,3 +19,7 @@ prometheus/prometheus
 
 # generated man pages
 *.1
+
+Containerfile
+storage
+vendor

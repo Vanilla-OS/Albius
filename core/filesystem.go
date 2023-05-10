@@ -116,7 +116,7 @@ func RunInChroot(root, command string) error {
 }
 
 func OCISetup(imageSource, destination string, verbose bool) error {
-	pmt, err := prometheus.NewPrometheus(filepath.Join(destination, "storage"), "overlay")
+	pmt, err := prometheus.NewPrometheus(filepath.Join(destination, "storage"), "overlay", 0)
 	if err != nil {
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
 	}

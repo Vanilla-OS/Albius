@@ -1,8 +1,12 @@
-# Prometheus
+<div align="center">
+<img src="assets/Prometheus.png?raw=true#gh-dark-mode-only" height="40">
+<img src="assets/Prometheus-mono.png?raw=true#gh-light-mode-only" height="40">
 
+---
 Prometheus is a simple and accessible library for pulling and mounting container 
 images. It is designed to be used as a dependency in [ABRoot](https://github.com/vanilla-os/abroot) 
 and [Albius](https://github.com/vanilla-os/albius).
+</div>
 
 ## Build dependencies
 
@@ -12,53 +16,10 @@ and [Albius](https://github.com/vanilla-os/albius).
 
 ## Usage
 
-```go
-package main
+You can see examples of how to use Prometheus in the [examples](examples) 
+directory.
 
-import (
-	"fmt"
-
-	"github.com/docker/docker/pkg/reexec"
-	"github.com/vanilla-os/prometheus"
-)
-
-func main() {
-	if reexec.Init() { // needed for subprocesses
-		return
-	}
-
-	pmt, err := prometheus.NewPrometheus("storage", "overlay")
-	if err != nil {
-		panic(err)
-	}
-
-	manifest, err := pmt.PullImage(
-		"registry.vanillaos.org/vanillaos/desktop:main", // image name
-		"vos-desktop", // stored image name
-	)
-	if err != nil {
-		panic(err)
-	}
-
-    fmt.Printf("Image pulled with digest %s\n", manifest.Config.Digest)
-
-	image, err := pmt.GetImageByDigest(manifest.Config.Digest)
-	if err != nil {
-		panic(err)
-	}
-
-	mountPoint, err := pmt.MountImage(image.TopLayer)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Image mounted at %s\n", mountPoint)
-
-    if err := pmt.UnmountImage(mountPoint); err != nil {
-        panic(err)
-    }
-}
-```
+A reference documentation is available on [pkg.go.dev](https://pkg.go.dev/github.com/vanilla-os/prometheus).
 
 ## License
 
@@ -68,6 +29,11 @@ libraries, which are licensed under the [Apache License 2.0](https://www.apache.
 Prometheus is distributed under the [GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)
 license.
 
+## Run tests
+
+```bash
+go test -v ./tests/...
+```
 
 ## Why the name Prometheus?
 

@@ -161,6 +161,12 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 		return fmt.Errorf("Failed to unmount image: %s", err)
 	}
 
+	// Store the digest in destination as it may be used by the update manager
+	err = os.WriteFile(filepath.Join(destination, ".oci_digest"), []byte(manifest.Config.Digest), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to save digest in %s: %s", destination, err)
+	}
+
 	err = os.RemoveAll(filepath.Join(destination, "storage"))
 	if err != nil {
 		return fmt.Errorf("Failed to remove storage from %s: %s", destination, err)

@@ -174,6 +174,10 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
+		err = disk.Partitions[partNum-1].SetLabel(partNewName)
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
 		err = disk.Partitions[partNum-1].NamePartition(partNewName)
 		if err != nil {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)

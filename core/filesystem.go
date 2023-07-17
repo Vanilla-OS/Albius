@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/vanilla-os/prometheus"
+	btrfs "github.com/containerd/btrfs/v2"
 )
 
 func Unsquashfs(filesystem, destination string, force bool) error {
@@ -173,4 +174,33 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 	}
 
 	return nil
+}
+
+func BtrfsSubvolCreate(btrfsPart *Partition, basepath, name string) error {
+	err := btrfsPart.Mount("/mnt/btrfs-part")
+	if err != nil {
+		return err
+	}
+
+	path := basepath
+	if basepath[len(basepath)-1] == '/' {
+		path += name
+	} else {
+		path += "/" + name
+	}
+	err = btrfs.SubvolCreate(path)
+	if err != nil {
+		return err
+	}
+
+	btrfsPart.UmountPartition()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func BtrfsSubvolDelete(path string) error {
+	return btrfs.SubvolDelete(path)
 }

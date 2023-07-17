@@ -219,6 +219,18 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
+	case "btrfs-subvol-create":
+		partNum, err := strconv.Atoi(args[0].(string))
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
+		basepath := args[1].(string)
+		name := args[2].(string)
+		part := disk.Partitions[partNum-1]
+		err = BtrfsSubvolCreate(&part, basepath, name)
+		if err != nil {
+			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+		}
 	default:
 		return fmt.Errorf("Unrecognized operation %s", operation)
 	}

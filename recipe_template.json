@@ -85,7 +85,9 @@
 	],
 	"installation": {
 		"method": "unsquashfs",
-		"source": "/live/filesystem.squashfs"
+		"source": "/live/filesystem.squashfs",
+        "initramfsPre": ["my_pre_hook"],
+        "initramfsPost": ["my_post_hook"]
 	},
 	"postInstallation": [
 		{

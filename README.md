@@ -78,15 +78,21 @@ Sets `/dev/sda1` as the root partition and `/dev/sda2` as the home partition.
 ### Installation
 
 The installation section holds options specific to the installation process,
-such as the installation method and filesystem source. At the current time,
-this section only contains two options: "method", which can be either "unsquashfs"
+such as the installation method and filesystem source. This section contains two
+installation-related options: "method", which can be either "unsquashfs"
 or "oci", and "source", which describes a path for the Squashfs filesystem or
 OCI image repository, depending on the selected method.
+The other two parameters are related to the initramfs generation, which happens
+at the end of the installation process. The user can specify optional commands
+to execute before and after this step, such as unlocking certain binaries or
+preparing the file scructure.
 
 ```json
 "installation": {
     "method": "unsquashfs",
     "source": "/cdrom/casper/filesystem.squashfs"
+    "initramfsPre": ["my_pre_hook"],
+    "initramfsPost": ["my_post_hook"]
 }
 ```
 

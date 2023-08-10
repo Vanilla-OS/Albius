@@ -39,8 +39,10 @@ type Mountpoint struct {
 }
 
 type Installation struct {
-	Method InstallationMethod
-	Source string
+	Method        InstallationMethod
+	Source        string
+	InitramfsPre  []string
+	InitramfsPost []string
 }
 
 type PostStep struct {
@@ -572,10 +574,26 @@ func (recipe *Recipe) Install() error {
 		return fmt.Errorf("Failed to generate fstab: %s", err)
 	}
 
+	// Initramfs pre-scripts
+	for _, preCmd := range recipe.Installation.InitramfsPre {
+		err := RunCommand(preCmd)
+		if err != nil {
+			return fmt.Errorf("Initramfs pre-script '%s' failed: %s", preCmd, err)
+		}
+	}
+
 	// Update Initramfs
 	err = UpdateInitramfs(RootA)
 	if err != nil {
 		return fmt.Errorf("Failed to update initramfs: %s", err)
+	}
+
+	// Initramfs post-scripts
+	for _, postCmd := range recipe.Installation.InitramfsPost {
+		err := RunCommand(postCmd)
+		if err != nil {
+			return fmt.Errorf("Initramfs post-script '%s' failed: %s", postCmd, err)
+		}
 	}
 
 	return nil

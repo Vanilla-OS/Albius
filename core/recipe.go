@@ -576,7 +576,7 @@ func (recipe *Recipe) Install() error {
 
 	// Initramfs pre-scripts
 	for _, preCmd := range recipe.Installation.InitramfsPre {
-		err := RunCommand(preCmd)
+		err := RunInChroot(RootA, preCmd)
 		if err != nil {
 			return fmt.Errorf("Initramfs pre-script '%s' failed: %s", preCmd, err)
 		}
@@ -590,7 +590,7 @@ func (recipe *Recipe) Install() error {
 
 	// Initramfs post-scripts
 	for _, postCmd := range recipe.Installation.InitramfsPost {
-		err := RunCommand(postCmd)
+		err := RunInChroot(RootA, postCmd)
 		if err != nil {
 			return fmt.Errorf("Initramfs post-script '%s' failed: %s", postCmd, err)
 		}

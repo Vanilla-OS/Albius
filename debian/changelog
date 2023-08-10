@@ -1,3 +1,9 @@
+albius (0.2.3) unstable; urgency=critical
+
+  * Fix pre-run and post-run scripts not being executed in chroot
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 10 Aug 2023 13:07:00 -0300
+
 albius (0.2.2) unstable; urgency=critical
 
   * Add support for pre-run and post-run script when updating the initramfs in

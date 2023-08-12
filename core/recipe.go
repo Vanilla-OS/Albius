@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -544,7 +545,7 @@ func (recipe *Recipe) Install() error {
 			return err
 		}
 	case OCI:
-		err := OCISetup(recipe.Installation.Source, RootA, false)
+		err := OCISetup(recipe.Installation.Source, filepath.Join(RootA, "var"), RootA, false)
 		if err != nil {
 			return err
 		}

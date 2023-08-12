@@ -1,3 +1,9 @@
+albius (0.2.4) unstable; urgency=critical
+
+  * Create OCI storage in var partition
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 12 Aug 2023 19:09:00 -0300
+
 albius (0.2.3) unstable; urgency=critical
 
   * Fix pre-run and post-run scripts not being executed in chroot

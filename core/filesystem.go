@@ -115,8 +115,8 @@ func RunInChroot(root, command string) error {
 	return nil
 }
 
-func OCISetup(imageSource, destination string, verbose bool) error {
-	pmt, err := prometheus.NewPrometheus(filepath.Join(destination, "storage"), "overlay", 0)
+func OCISetup(imageSource, storagePath, destination string, verbose bool) error {
+	pmt, err := prometheus.NewPrometheus(filepath.Join(storagePath, "storage"), "overlay", 0)
 	if err != nil {
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
 	}
@@ -156,7 +156,7 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 	}
 
 	// Remove storage from destination
-	err = RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", destination))
+	err = RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", storagePath))
 	if err != nil {
 		return fmt.Errorf("Failed to unmount image: %s", err)
 	}
@@ -165,11 +165,6 @@ func OCISetup(imageSource, destination string, verbose bool) error {
 	err = os.WriteFile(filepath.Join(destination, ".oci_digest"), []byte(manifest.Config.Digest), 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to save digest in %s: %s", destination, err)
-	}
-
-	err = os.RemoveAll(filepath.Join(destination, "storage"))
-	if err != nil {
-		return fmt.Errorf("Failed to remove storage from %s: %s", destination, err)
 	}
 
 	return nil

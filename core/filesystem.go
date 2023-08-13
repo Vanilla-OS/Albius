@@ -175,7 +175,7 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	}
 
 	// Delete tmp storage directory
-	err = syscall.Unmount(storageTmpDir, 0)
+	err = RunCommand(fmt.Sprintf("umount -l %s", storageTmpDir))
 	if err != nil {
 		return fmt.Errorf("Failed to unmount storage tmp dir: %s", err)
 	}

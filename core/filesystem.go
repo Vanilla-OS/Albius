@@ -126,7 +126,26 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 
 	defer currentRoot.Close()
 
-	err = syscall.Chroot(filepath.Dir(storagePath))
+	// Create temporary /etc/containers/policy.json and /var/tmp
+	err = os.MkdirAll(filepath.Join(storagePath, "etc", "containers"), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary etc dir: %s", err)
+	}
+	err = os.MkdirAll(filepath.Join(storagePath, "var", "tmp"), 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary tmp dir: %s", err)
+	}
+
+	policyContents, err := os.ReadFile("/etc/containers/policy.json")
+	if err != nil {
+		return fmt.Errorf("Failed to read /etc/containers/policy.json: %s", err)
+	}
+	err = os.WriteFile(filepath.Join(storagePath, "etc", "containers", "policy.json"), policyContents, 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to write to temp policy.json: %s", err)
+	}
+
+	err = syscall.Chroot(storagePath)
 	if err != nil {
 		return fmt.Errorf("Failed to chroot into var partition: %s", err)
 	}
@@ -136,7 +155,7 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 		return fmt.Errorf("Failed to chroot into var partition: %s", err)
 	}
 
-	pmt, err := prometheus.NewPrometheus(filepath.Join(storagePath, "storage"), "overlay", 0)
+	pmt, err := prometheus.NewPrometheus("/storage", "overlay", 0)
 	if err != nil {
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
 	}
@@ -190,6 +209,16 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	err = RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", storagePath))
 	if err != nil {
 		return fmt.Errorf("Failed to unmount image: %s", err)
+	}
+
+	// Clean temporary dirs from /var
+	err = os.RemoveAll(filepath.Join(storagePath, "etc"))
+	if err != nil {
+		return fmt.Errorf("Failed to remove temporary etc dir: %s", err)
+	}
+	err = os.RemoveAll(filepath.Join(storagePath, "var"))
+	if err != nil {
+		return fmt.Errorf("Failed to remove temporary tmp dir: %s", err)
 	}
 
 	// Store the digest in destination as it may be used by the update manager

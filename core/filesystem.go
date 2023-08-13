@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/vanilla-os/prometheus"
 )
@@ -116,6 +117,25 @@ func RunInChroot(root, command string) error {
 }
 
 func OCISetup(imageSource, storagePath, destination string, verbose bool) error {
+	// Chroot into storage partition to avoid using the ISO's /tmp which runs out of space
+	// pretty quickly
+	currentRoot, err := os.Open("/")
+	if err != nil {
+		return fmt.Errorf("Failed to get current root: %s", err)
+	}
+
+	defer currentRoot.Close()
+
+	err = syscall.Chroot(filepath.Dir(storagePath))
+	if err != nil {
+		return fmt.Errorf("Failed to chroot into var partition: %s", err)
+	}
+
+	err = os.Chdir("/")
+	if err != nil {
+		return fmt.Errorf("Failed to chroot into var partition: %s", err)
+	}
+
 	pmt, err := prometheus.NewPrometheus(filepath.Join(storagePath, "storage"), "overlay", 0)
 	if err != nil {
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
@@ -128,6 +148,17 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	}
 
 	fmt.Printf("Image pulled with digest %s\n", manifest.Config.Digest)
+
+	// Exit chroot to continue setup
+	err = currentRoot.Chdir()
+	if err != nil {
+		return fmt.Errorf("Failed to fchdir into root: %s", err)
+	}
+
+	err = syscall.Chroot(".")
+	if err != nil {
+		return fmt.Errorf("Failed to chroot back into base root: %s", err)
+	}
 
 	image, err := pmt.GetImageByDigest(manifest.Config.Digest)
 	if err != nil {

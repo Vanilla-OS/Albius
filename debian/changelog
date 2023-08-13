@@ -1,3 +1,9 @@
+albius (0.2.6) unstable; urgency=critical
+
+  * Fix unmount storage tmp directory
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 13 Aug 2023 13:44:00 -0300
+
 albius (0.2.5) unstable; urgency=critical
 
   * Prevent running out of memory when pulling OCI image by creating a tmp

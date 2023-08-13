@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/vanilla-os/prometheus"
 )
@@ -121,6 +122,18 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 		return fmt.Errorf("Failed to create Prometheus instance: %s", err)
 	}
 
+	// Create tmp directory in root's /var to store podman's temp files, since /var/tmp in
+	// the ISO is tied to the user's RAM and can run out of space pretty quickly
+	storageTmpDir := filepath.Join(storagePath, "tmp")
+	err = os.Mkdir(storageTmpDir, 0644)
+	if err != nil {
+		return fmt.Errorf("Failed to create storage tmp dir: %s", err)
+	}
+	err = RunCommand(fmt.Sprintf("mount --bind %s %s", storageTmpDir, "/var/tmp"))
+	if err != nil {
+		return fmt.Errorf("Failed to mount bind storage tmp dir: %s", err)
+	}
+
 	storedImageName := strings.ReplaceAll(imageSource, "/", "-")
 	manifest, err := pmt.PullImage(imageSource, storedImageName)
 	if err != nil {
@@ -159,6 +172,16 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	err = RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", storagePath))
 	if err != nil {
 		return fmt.Errorf("Failed to unmount image: %s", err)
+	}
+
+	// Delete tmp storage directory
+	err = syscall.Unmount(storageTmpDir, 0)
+	if err != nil {
+		return fmt.Errorf("Failed to unmount storage tmp dir: %s", err)
+	}
+	err = os.RemoveAll(storageTmpDir)
+	if err != nil {
+		return fmt.Errorf("Failed to remove storage tmp dir: %s", err)
 	}
 
 	// Store the digest in destination as it may be used by the update manager

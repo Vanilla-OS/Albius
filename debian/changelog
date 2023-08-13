@@ -1,3 +1,10 @@
+albius (0.2.5) unstable; urgency=critical
+
+  * Prevent running out of memory when pulling OCI image by creating a tmp
+    directory in /var
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 13 Aug 2023 12:29:00 -0300
+
 albius (0.2.4) unstable; urgency=critical
 
   * Create OCI storage in var partition

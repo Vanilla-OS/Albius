@@ -1,3 +1,9 @@
+albius (0.2.7) unstable; urgency=critical
+
+  * Clean storage tmp directory instead of deleting it
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 13 Aug 2023 14:46:00 -0300
+
 albius (0.2.6) unstable; urgency=critical
 
   * Fix unmount storage tmp directory

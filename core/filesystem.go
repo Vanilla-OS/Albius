@@ -173,14 +173,20 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 		return fmt.Errorf("Failed to unmount image: %s", err)
 	}
 
-	// Delete tmp storage directory
+	// Unmount tmp storage directory
 	err = RunCommand("umount -l /var/tmp")
 	if err != nil {
 		return fmt.Errorf("Failed to unmount storage tmp dir: %s", err)
 	}
-	err = os.RemoveAll(storageTmpDir)
+	entries, err := os.ReadDir(storageTmpDir)
 	if err != nil {
-		return fmt.Errorf("Failed to remove storage tmp dir: %s", err)
+		return fmt.Errorf("Failed to read from storage tmp dir: %s", err)
+	}
+	for _, entry := range entries {
+		err = os.RemoveAll(filepath.Join(storageTmpDir, entry.Name()))
+		if err != nil {
+			return fmt.Errorf("Failed to remove %s from storage tmp dir: %s", entry.Name(), err)
+		}
 	}
 
 	// Store the digest in destination as it may be used by the update manager

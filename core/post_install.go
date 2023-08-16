@@ -187,9 +187,9 @@ BACKSPACE="guess"
 	}
 
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, "setupcon")
+		err = RunInChroot(targetRoot, "setupcon --save-only")
 	} else {
-		err = RunCommand("setupcon")
+		err = RunCommand("setupcon --save-only")
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to set keyboard layout: %s", err)

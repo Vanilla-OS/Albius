@@ -107,7 +107,7 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		}
 	}
 
-	grubInstallCmd := "grub-install --boot-directory %s --target=%s %s"
+	grubInstallCmd := "grub-install --boot-directory %s --target=%s --uefi-secure-boot %s"
 
 	var err error
 	if targetRoot != "" {

@@ -1,3 +1,16 @@
+albius (0.2.9) unstable; urgency=critical
+
+  * Fix: Unmount paths after updating initramfs
+  * Unmount all partitions before formatting disk
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 20 Aug 2023 13:33:00 -0300
+
+albius (0.2.8) unstable; urgency=critical
+
+  * Mount required paths to chroot before updating initramfs
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 19 Aug 2023 13:23:00 -0300
+
 albius (0.2.7) unstable; urgency=critical
 
   * Clean storage tmp directory instead of deleting it

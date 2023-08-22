@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -78,8 +79,38 @@ func (part *Partition) Mount(location string) error {
 	return nil
 }
 
+func (part *Partition) IsMounted() (bool, error) {
+	isMountedCmd := "mount | grep %s | wc -l"
+
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(isMountedCmd, part.Path))
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("Failed to check if partition is mounted: %s", err)
+	}
+
+	mounts, err := strconv.Atoi(string(output))
+	if err != nil {
+		return false, fmt.Errorf("Failed to convert str to int: %s", err)
+	}
+
+	if mounts > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (part *Partition) UmountPartition() error {
 	var mountTarget string
+
+	// Check if partition is mounted first
+	isMounted, err := part.IsMounted()
+	if err != nil {
+		return err
+	}
+	if !isMounted {
+		return nil
+	}
 
 	// Pass unmount operation to cryptsetup if it's a LUKS-encrypted partition
 	luks, err := IsLuks(part)
@@ -287,3 +318,4 @@ func (part *Partition) SetLabel(label string) error {
 
 	return nil
 }
+

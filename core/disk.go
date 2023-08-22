@@ -126,6 +126,12 @@ func (disk *Disk) Update() error {
 func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
+	for _, part := range disk.Partitions {
+		if err := part.UmountPartition(); err != nil {
+			return fmt.Errorf("Failed to unmount partition %s: %s", part.Path, err)
+		}
+	}
+
 	err := RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
 	if err != nil {
 		return fmt.Errorf("Failed to label disk: %s", err)

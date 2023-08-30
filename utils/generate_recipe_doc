@@ -1,0 +1,30 @@
+#!/usr/bin/python
+
+recipe_file = "core/recipe.go"
+output_file = "RECIPE.md"
+
+output = "# Recipe commands\n\n"
+inside_block = False
+with open(recipe_file, "r") as f:
+    lines = f.readlines()
+    for line in lines:
+        strip_line = line.strip()
+        ends_block = strip_line[-2:] == "*/"
+
+        if not inside_block and strip_line.startswith("/* !!"):
+            strip_line = strip_line.removeprefix("/* !!").lstrip()
+            if ends_block:
+                strip_line = strip_line[:-2] + "\n"
+            else:
+                inside_block = True
+            output += strip_line + "\n"
+        elif inside_block:
+            if ends_block:
+                inside_block = False
+                output += "\n"
+                continue
+            strip_line = strip_line[1:].lstrip()
+            output += strip_line + "\n"
+
+with open(output_file, "w") as f:
+    f.write(output)

@@ -4,7 +4,7 @@
 
 ---
 Albius is a Linux installer backend originally designed for
-[Vanilla OS](https://vanillaos.org/), but capable of handling any Linux 
+[Vanilla OS](https://vanillaos.org/), but capable of handling any Linux
 distribution that uses either Squashfs or OCI images for distributing the base
 system. Albius is written entirely in Go and uses a recipe system (see "recipes"
 subsection) for describing operations, mountpoints and options.
@@ -30,6 +30,9 @@ Recipes are the primary way of configuring Albius and are simply a JSON file
 containing **setup** steps, **mountpoints** for the target system,
 **installation** options, and **post-installation** steps. A sample recipe can
 be found in `recipe_template.json`
+
+The full list of operations supported by the recipe system can be found in
+[RECIPE.md](https://github.com/Vanilla-OS/Albius/blob/main/RECIPE.md).
 
 ### Setup
 

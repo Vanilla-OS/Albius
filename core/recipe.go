@@ -101,8 +101,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	/* !! ### label
 	 * Creates a new partition table on the disk.
 	 *
-	 * Accepts:
-	 * - Label type (`string`): The partitioning scheme. Either `mbr` or `gpt`.
+	 * **Accepts**:
+	 * - *LabelType* (`string`): The partitioning scheme. Either `mbr` or `gpt`.
 	 */
 	case "label":
 		label := DiskLabel(args[0].(string))
@@ -113,12 +113,16 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	/* !! ### mkpart
 	 * Creates a new partition on the disk.
 	 *
-	 * Accepts:
-	 * - Name (`string`): The name for the partition.
-	 * - FsType (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*. If FsType is prefixed with `luks-` (e.g. `luks-btrfs`), the partition will be encrypted using LUKS2.
-	 * - Start (`int`): The start position on disk for the new partition (in MiB).
-	 * - End (`int`): The end position on disk for the new partition (in MiB), or -1 for using all the remaining space.
-	 * - LUKSPassword (optional `string`): The password used to encrypt the partition. Only relevant if `FsType` is prefixed with `luks-`.
+	 * **Accepts**:
+	 * - *Name* (`string`): The name for the partition.
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`,
+	 * `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*. If FsType
+	 * is prefixed with `luks-` (e.g. `luks-btrfs`), the partition will be encrypted using LUKS2.
+	 * - *Start* (`int`): The start position on disk for the new partition (in MiB).
+	 * - *End* (`int`): The end position on disk for the new partition (in MiB), or -1 for
+	 * using all the remaining space.
+	 * - *LUKSPassword* (optional `string`): The password used to encrypt the partition. Only
+	 * relevant if `FsType` is prefixed with `luks-`.
 	 *
 	 * \* = Not fully tested. Please create an issue if you encouter problems.
 	 */
@@ -169,7 +173,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Deletes a partition from the disk.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 	 */
 	case "rm":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -184,8 +188,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Resizes a partition on disk.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
-	 * - PartNewSize (`int`): The new size in MiB for the partition.
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *PartNewSize* (`int`): The new size in MiB for the partition.
 	 */
 	case "resizepart":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -204,8 +208,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Renames the specified partition.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
-	 * - PartNewName (`string`): The new name for the partition.
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *PartNewName* (`string`): The new name for the partition.
 	 */
 	case "namepart":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -225,12 +229,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### setflag
-	 * Sets the value of a partition flag, from the flags supported by parted. See parted(8) for the full list.
+	 * Sets the value of a partition flag, from the flags supported by parted.
+	 * See parted(8) for the full list.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
-	 * - FlagName (`string`): The name of the flag.
-	 * - State (`bool`): The value to apply to the flag. Either `true` or `false`.
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *FlagName* (`string`): The name of the flag.
+	 * - *State* (`bool`): The value to apply to the flag. Either `true` or `false`.
 	 */
 	case "setflag":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -245,8 +250,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Formats an existing partition to a specified filesystem. This operation will destroy all data.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
-	 * - FsType (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
 	 */
 	case "format":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -263,9 +268,9 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Same as `format` but encrypts the partition with LUKS2.
 	 *
 	 * **Accepts**:
-	 * - PartNum (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
-	 * - FsType (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
-	 * - Password (`string`): The password used to encrypt the partition.
+	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Password* (`string`): The password used to encrypt the partition.
 	 */
 	case "luks-format":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -315,10 +320,10 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Creates a new user.
 	 *
 	 * **Accepts**:
-	 * - Username (`string`): The username of the new user.
-	 * - Fullname (`string`): The full name (display name) of the new user.
-	 * - Groups (`[string]`): A list of groups the new user belongs to (the new user is automatically part of its own group).
-	 * - Password (optional `string`): The password for the user. If not proviced, password login will be disabled.
+	 * - *Username* (`string`): The username of the new user.
+	 * - *Fullname* (`string`): The full name (display name) of the new user.
+	 * - *Groups* (`[string]`): A list of groups the new user belongs to (the new user is automatically part of its own group).
+	 * - *Password* (optional `string`): The password for the user. If not proviced, password login will be disabled.
 	 */
 	case "adduser":
 		username := args[0].(string)
@@ -342,7 +347,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Sets the timezone.
 	 *
 	 * **Accepts**:
-	 * - TZ (`string`): The timezone code (e.g. `America/Sao_Paulo`).
+	 * - *TZ* (`string`): The timezone code (e.g. `America/Sao_Paulo`).
 	 */
 	case "timezone":
 		tz := args[0].(string)
@@ -351,10 +356,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			return err
 		}
 	/* !! ### shell
-	 * Runs a shell command.
+	 * Runs a shell command. This command accepts a variable number or parameters, where
+	 * each parameter is a separate command to run.
 	 *
 	 * **Accepts**:
-	 * - Command(s) (`string` or `[string]`): The shell command(s) to execute.
+	 * - *Command(s)* (`...string`): The shell command(s) to execute.
 	 */
 	case "shell":
 		for _, arg := range args {
@@ -373,8 +379,8 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Given a file containing a list of packages, uses the specified package manager to remove them.
 	 *
 	 * **Accepts**:
-	 * - PkgRemovePath (`string`): The path containing the list of packages to remove.
-	 * - RemoveCmd (`string`): The package manager command to remove packages (e.g. `apt remove`).
+	 * - *PkgRemovePath* (`string`): The path containing the list of packages to remove.
+	 * - *RemoveCmd* (`string`): The package manager command to remove packages (e.g. `apt remove`).
 	 */
 	case "pkgremove":
 		pkgRemovePath := args[0].(string)
@@ -387,7 +393,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Sets the system's hostname.
 	 *
 	 * **Accepts**:
-	 * - NewHostname (`string`): The hostname to set.
+	 * - *NewHostname* (`string`): The hostname to set.
 	 */
 	case "hostname":
 		newHostname := args[0].(string)
@@ -399,7 +405,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Sets the system's locale, using `locale-gen` to generate the locale if not present.
 	 *
 	 * **Accepts**:
-	 * - LocaleCode (`string`): The locale code to use. See `/etc/locale.gen` for the full list of locale codes.
+	 * - *LocaleCode* (`string`): The locale code to use. See `/etc/locale.gen` for the full list of locale codes.
 	 */
 	case "locale":
 		localeCode := args[0].(string)
@@ -411,7 +417,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Use the provided partition as swap space.
 	 *
 	 * **Accepts**:
-	 * - Partition (`string`): The partition to use as swap.
+	 * - *Partition* (`string`): The partition to use as swap.
 	 */
 	case "swapon":
 		partition := args[0].(string)
@@ -423,9 +429,9 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Sets the system keyboard layout. See `keyboard(5)` for more details.
 	 *
 	 * **Accepts**:
-	 * - Layout (`string`): The keyboard's layout (XKBLAYOUT).
-	 * - Model (`string`): The keyboard's model (XKBMODEL).
-	 * - Variant (`string`): The keyboard's variant (XKBVARIANT).
+	 * - *Layout* (`string`): The keyboard's layout (XKBLAYOUT).
+	 * - *Model* (`string`): The keyboard's model (XKBMODEL).
+	 * - *Variant* (`string`): The keyboard's variant (XKBVARIANT).
 	 */
 	case "keyboard":
 		layout := args[0].(string)
@@ -439,9 +445,9 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * Installs GRUB to the specified partition.
 	 *
 	 * **Accepts**:
-	 * - BootDirectory (`string`): The path for the boot dir (usually `/boot`).
-	 * - InstallDevice (`string`): The disk where the boot partition is located.
-	 * - Target (`string`): The target firmware. Either `bios` for legacy systems or `efi` for UEFI systems.
+	 * - *BootDirectory* (`string`): The path for the boot dir (usually `/boot`).
+	 * - *InstallDevice* (`string`): The disk where the boot partition is located.
+	 * - *Target* (`string`): The target firmware. Either `bios` for legacy systems or `efi` for UEFI systems.
 	 */
 	case "grub-install":
 		bootDirectory := args[0].(string)
@@ -461,7 +467,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			return err
 		}
 	/* !! ### grub-default-config
-	 * TODO: Document
+	 * Writes key-value pairs into `/etc/default/grub`. This command accepts a variable
+	 * number of parameters, where each parameter represents a new item to add to the file.
+	 *
+	 * **Accepts**:
+	 * - *KV(s)* (`...string`): The `KEY=value` pair(s) to add to the GRUB default file.
 	 */
 	case "grub-default-config":
 		currentConfig, err := GetGrubConfig(targetRoot)
@@ -477,7 +487,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			return err
 		}
 	/* !! ### grub-add-script
-	 * TODO: Document
+	 * Adds one or more script files into `/etc/default/grub.d`. This command accepts a variable
+	 * number of parameters, where each parameter represents a new file to add to the directory.
+	 *
+	 * **Accepts**:
+	 * - *ScriptPath(s)* (`...string`): The file path(s) for each script to add.
 	 */
 	case "grub-add-script":
 		for _, arg := range args {
@@ -488,7 +502,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			}
 		}
 	/* !! ### grub-remove-script
-	 * TODO: Document
+	 * Removes one or more script files from `/etc/default/grub.d`. This command accepts a variable
+	 * number of parameters, where each parameter represents a file to delete from the directory.
+	 *
+	 * **Accepts**:
+	 * - *ScriptPath(s)* (`...string`): The file path(s) for each script to be removed.
 	 */
 	case "grub-remove-script":
 		for _, arg := range args {
@@ -499,7 +517,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			}
 		}
 	/* !! ### grub-mkconfig
-	 * TODO: Document
+	 * Runs the `grub-mkconfig` command to generate a new GRUB configuration into the specified
+	 * output path.
+	 *
+	 * **Accepts**:
+	 * - *OutputPath* (`string`): The target path for the generated config.
 	 */
 	case "grub-mkconfig":
 		outputPath := args[0].(string)

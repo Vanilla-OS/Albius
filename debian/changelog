@@ -1,3 +1,9 @@
+albius (0.2.10) unstable; urgency=critical
+
+  * Fix: Fix incorrect parsing of IsMounted function
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 22 Aug 2023 08:39:00 -0300
+
 albius (0.2.9) unstable; urgency=critical
 
   * Fix: Unmount paths after updating initramfs

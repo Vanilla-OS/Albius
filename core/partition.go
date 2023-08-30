@@ -88,7 +88,7 @@ func (part *Partition) IsMounted() (bool, error) {
 		return false, fmt.Errorf("Failed to check if partition is mounted: %s", err)
 	}
 
-	mounts, err := strconv.Atoi(string(output))
+	mounts, err := strconv.Atoi(strings.TrimSpace(string(output)))
 	if err != nil {
 		return false, fmt.Errorf("Failed to convert str to int: %s", err)
 	}
@@ -318,4 +318,3 @@ func (part *Partition) SetLabel(label string) error {
 
 	return nil
 }
-

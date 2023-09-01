@@ -93,11 +93,38 @@ func GenFstab(targetRoot string, entries [][]string) error {
 }
 
 func UpdateInitramfs(root string) error {
+	// Setup mountpoints
+	if err := RunCommand(fmt.Sprintf("mount --bind /dev %s/dev", root)); err != nil {
+		return fmt.Errorf("Error mounting /dev to chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("mount --bind /dev/pts %s/dev/pts", root)); err != nil {
+		return fmt.Errorf("Error mounting /dev/pts to chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("mount --bind /proc %s/proc", root)); err != nil {
+		return fmt.Errorf("Error mounting /proc to chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("mount --bind /sys %s/sys", root)); err != nil {
+		return fmt.Errorf("Error mounting /sys to chroot: %s", err)
+	}
+
 	updInitramfsCmd := "update-initramfs -c -k all"
 
 	err := RunInChroot(root, updInitramfsCmd)
 	if err != nil {
 		return fmt.Errorf("Failed to run update-initramfs command: %s", err)
+	}
+
+	if err := RunCommand(fmt.Sprintf("umount %s/dev/pts", root)); err != nil {
+		return fmt.Errorf("Error unmounting /dev/pts fron chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("umount %s/dev", root)); err != nil {
+		return fmt.Errorf("Error unmounting /dev from chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("umount %s/proc", root)); err != nil {
+		return fmt.Errorf("Error unmounting /proc from chroot: %s", err)
+	}
+	if err := RunCommand(fmt.Sprintf("umount %s/sys", root)); err != nil {
+		return fmt.Errorf("Error unmounting /sys from chroot: %s", err)
 	}
 
 	return nil

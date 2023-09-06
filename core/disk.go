@@ -147,7 +147,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 // This can be useful when creating LUKS-encrypted partitions, where the format
 // operation needs to be executed first.
 func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int64) (*Partition, error) {
-	createPartCmd := "parted -s %s unit MiB mkpart%s \"%s\" %s %d %s"
+	createPartCmd := "parted -s %s unit MiB mkpart%s%s %s %d %s"
 
 	var partType string
 	if target.Label == MSDOS {
@@ -163,7 +163,12 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		endStr = fmt.Sprint(end)
 	}
 
-	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, name, fsType, start, endStr))
+	partName := ""
+	if name != "" {
+		partName = fmt.Sprintf(" \"%s\"", name)
+	}
+
+	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, partName, fsType, start, endStr))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create partition: %s", err)
 	}
@@ -192,9 +197,11 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		}
 	}
 
-	err = newPartition.NamePartition(name)
-	if err != nil {
-		return nil, err
+	if name != "" {
+		err = newPartition.NamePartition(name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return newPartition, nil

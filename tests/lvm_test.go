@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -79,7 +80,8 @@ func TestPvcreate(t *testing.T) {
 }
 
 func TestPvs(t *testing.T) {
-	err := lvm.Pvs()
+	pvs, err := lvm.Pvs()
+	fmt.Printf("\tReturned: %v\n", pvs)
 	if err != nil {
 		t.Fatal(err)
 	}

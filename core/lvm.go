@@ -142,7 +142,17 @@ func (l *Lvm) Pvs() ([]Pv, error) {
 }
 
 // pvresize (resize pv)
-func (l *Lvm) Pvresize() error {
+func (l *Lvm) Pvresize(pv *Pv, setPvSize ...float64) error {
+	setPvSizeOpt := ""
+	if len(setPvSize) > 0 {
+		setPvSizeOpt = fmt.Sprintf("--setphysicalvolumesize %fm", setPvSize[0])
+	}
+	command := C.CString(fmt.Sprintf("pvresize -y %s %s", setPvSizeOpt, pv.Path))
+	ret := C.lvm2_run(l._instance, command)
+	if ret != ECMD_PROCESSED {
+		return fmt.Errorf("pvresize command returned exit status %d", ret)
+	}
+
 	return nil
 }
 

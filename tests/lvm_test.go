@@ -81,7 +81,35 @@ func TestPvcreate(t *testing.T) {
 
 func TestPvs(t *testing.T) {
 	pvs, err := lvm.Pvs()
-	fmt.Printf("\tReturned: %v\n", pvs)
+	fmt.Printf(" -> Returned: %v\n", pvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPvResize(t *testing.T) {
+	pvs, err := lvm.Pvs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = lvm.Pvresize(&pvs[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPvShrink(t *testing.T) {
+	pvs, err := lvm.Pvs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = lvm.Pvresize(&pvs[0], 10.0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pvs, err = lvm.Pvs()
+	fmt.Printf(" -> New size: %v\n", pvs)
 	if err != nil {
 		t.Fatal(err)
 	}

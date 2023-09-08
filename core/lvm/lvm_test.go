@@ -1,4 +1,4 @@
-package tests
+package lvm
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	lvm     albius.Lvm
+	lvm     Lvm
 	device  string
 	lvmpart string
 )
 
 func TestMain(m *testing.M) {
 	// Create LVM wrapper instance
-	lvm = albius.NewLvm()
+	lvm = NewLvm()
 
 	// Setup testing device
 	// Create dummy image
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic("error creating partition B in loop device: " + err.Error())
 	}
-	lvmpart = "/dev/loop0p1"
+	lvmpart = device + "p"
 
 	// Run tests
 	status := m.Run()
@@ -73,7 +73,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestPvcreate(t *testing.T) {
-	err := lvm.Pvcreate(lvmpart)
+	err := lvm.Pvcreate(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +110,55 @@ func TestPvShrink(t *testing.T) {
 
 	pvs, err = lvm.Pvs()
 	fmt.Printf(" -> New size: %v\n", pvs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPvRemoveStr(t *testing.T) {
+	err := lvm.Pvremove(lvmpart + "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPvRemoveStruct(t *testing.T) {
+	// Recreate PV removed by previous test
+	err := lvm.Pvcreate(lvmpart + "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pvs, err := lvm.Pvs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = lvm.Pvremove(pvs[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVgCreate(t *testing.T) {
+	// Create two testing PVs
+	err := lvm.Pvcreate(lvmpart + "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = lvm.Pvcreate(lvmpart + "2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Pass one PV as struct and another as string
+	pvs, err := lvm.Pvs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf(" -> Returned: %v\n", pvs)
+
+	err = lvm.Vgcreate("MyTestingVG", pvs[0], lvmpart+"2")
 	if err != nil {
 		t.Fatal(err)
 	}

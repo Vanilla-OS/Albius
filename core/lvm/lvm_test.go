@@ -156,7 +156,6 @@ func TestVgCreate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf(" -> Returned: %v\n", pvs)
 
 	err = lvm.Vgcreate("MyTestingVG", pvs[0], lvmpart+"2")
 	if err != nil {

@@ -46,13 +46,26 @@ func (l *Lvm) lvm2Run(command string, args ...interface{}) (string, error) {
 	if ret != ECMD_PROCESSED {
 		return "", fmt.Errorf("command returned exit status %d", ret)
 	}
-	defer C.free(unsafe.Pointer(*C.log_output()))
 
-	return C.GoString(*C.log_output()), nil
+	output := ""
+	for {
+		logger := C.logger()
+		if C.lvm_log_empty(logger) == 1 {
+			break
+		}
+		entry := C.lvm_log_remove(&logger)
+		C.set_logger(logger)
+		entryStr := C.GoString((*C.char)(entry))
+		C.free(entry)
+		output += entryStr + "\n"
+	}
+
+	return output, nil
 }
 
 func NewLvm() Lvm {
 	C.lvm2_log_fn((*[0]byte)(C.lvm_log_capture_fn))
+	C.init_logger()
 
 	instance := Lvm{
 		C.lvm2_init(),
@@ -62,6 +75,7 @@ func NewLvm() Lvm {
 }
 
 func (l *Lvm) Dispose() {
+	C.free(unsafe.Pointer(C.logger()))
 	C.lvm2_exit(l._instance)
 }
 
@@ -83,7 +97,6 @@ func (l *Lvm) Pvs() ([]Pv, error) {
 	}
 
 	pvList := []Pv{}
-	fmt.Println(output)
 	pvs := strings.Split(output, "\n")
 	for _, pv := range pvs {
 		if pv == "" {

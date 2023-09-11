@@ -26,9 +26,6 @@ type Lvm struct {
 	_instance unsafe.Pointer
 }
 
-type Lv struct {
-}
-
 func (l *Lvm) lvm2Run(command string, args ...interface{}) (string, error) {
 	cmd := C.CString(fmt.Sprintf(command, args...))
 	defer C.free(unsafe.Pointer(cmd))
@@ -297,7 +294,79 @@ func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
 }
 
 // lvcreate (create lv)
+func (l *Lvm) Lvcreate(name string, vg interface{}, lvType LVType, size float64) error {
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return fmt.Errorf("lvcreate: %v", err)
+	}
+
+	_, err = l.lvm2Run("lvcreate -y --type %s -L %.2fm %s -n %s", lvType, size, vgName, name)
+	if err != nil {
+		return fmt.Errorf("lvcreate: %v", err)
+	}
+
+	return nil
+}
+
 // lvs (list lvs)
+func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
+	filterStr := ""
+	if len(filter) > 0 {
+		filterStr = strings.Join(filter, " ")
+	}
+
+	output, err := l.lvm2Run("lvs --noheadings --units m --nosuffix --separator , %s", filterStr)
+	if err != nil {
+		return []Lv{}, fmt.Errorf("lvs: %v", err)
+	}
+
+	lvList := []Lv{}
+	lvs := strings.Split(output, "\n")
+	for _, lv := range lvs {
+		if lv == "" {
+			continue
+		}
+
+		vals := strings.Split(lv, ",")
+		attrs, err := ParseLvAttrs(vals[2])
+		if err != nil {
+			return []Lv{}, fmt.Errorf("lvs: %v", err)
+		}
+
+		size, err := strconv.ParseFloat(vals[3], 64)
+		if err != nil {
+			return []Lv{}, fmt.Errorf("lvs: could not convert %s to float", vals[5])
+		}
+
+		pool := -1.0
+		if vals[4] != "" {
+			pool, err = strconv.ParseFloat(vals[4], 64)
+			if err != nil {
+				return []Lv{}, fmt.Errorf("lvs: could not convert %s to float", vals[5])
+			}
+		}
+
+		lvList = append(lvList, Lv{
+			Name:            vals[0],
+			VgName:          vals[1],
+			AttrVolType:     attrs[0],
+			AttrPermissions: attrs[1],
+			AttrAllocPolicy: attrs[2],
+			AttrFixed:       attrs[3],
+			AttrState:       attrs[4],
+			AttrDevice:      attrs[5],
+			AttrTargetType:  attrs[6],
+			AttrBlocks:      attrs[7],
+			AttrHealth:      attrs[8],
+			AttrSkip:        attrs[9],
+			Size:            size,
+			Pool:            pool,
+		})
+	}
+
+	return lvList, nil
+}
+
 // lvrename (rename lv)
 // lvresize (resize lv and fs)
 // lvremove (remove lv)

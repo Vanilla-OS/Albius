@@ -13,7 +13,7 @@ const (
 	PV_ATTR_MISSING     = 1 << iota
 	PV_ATTR_EXPORTED    = 1 << iota
 	PV_ATTR_DUPLICATE   = 1 << iota
-	PV_ATTR_ALLICATABLE = 1 << iota
+	PV_ATTR_ALLOCATABLE = 1 << iota
 	PV_ATTR_USED        = 1 << iota
 )
 
@@ -29,7 +29,7 @@ func ParsePvAttrs(attrStr string) (int, error) {
 	case 'd':
 		attrVal += PV_ATTR_DUPLICATE
 	case 'a':
-		attrVal += PV_ATTR_ALLICATABLE
+		attrVal += PV_ATTR_ALLOCATABLE
 	case 'u':
 		attrVal += PV_ATTR_USED
 	case '-':
@@ -63,7 +63,7 @@ func (p *Pv) IsDuplicate() bool {
 }
 
 func (p *Pv) IsAllocatable() bool {
-	return p.Attr&PV_ATTR_ALLICATABLE > 0
+	return p.Attr&PV_ATTR_ALLOCATABLE > 0
 }
 
 func (p *Pv) IsUsed() bool {

@@ -129,7 +129,7 @@ func TestPvRemoveStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pvs, err := lvm.Pvs()
+	pvs, err := lvm.Pvs(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func TestVgCreate(t *testing.T) {
 	}
 
 	// Pass one PV as struct and another as string
-	pvs, err := lvm.Pvs()
+	pvs, err := lvm.Pvs(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,12 +178,12 @@ func TestVgrename(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = vgs[0].Rename("MyTestingVG3")
+	err = vgs[0].Rename("MyTestingVG1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	vgs, err = lvm.Vgs("MyTestingVG3")
+	vgs, err = lvm.Vgs("MyTestingVG1")
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)
@@ -224,6 +224,21 @@ func TestVgExtend(t *testing.T) {
 
 	// Retrieve Vg
 	vgs, err = lvm.Vgs()
+	fmt.Printf(" -> Returned: %v\n", vgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLvCreate(t *testing.T) {
+	err := lvm.Lvcreate("MyLv0", "MyTestingVG1", LV_TYPE_LINEAR, 30)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLvs(t *testing.T) {
+	vgs, err := lvm.Lvs()
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)

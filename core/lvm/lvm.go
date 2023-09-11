@@ -12,6 +12,7 @@ import (
 	"unsafe"
 )
 
+// LVM command return codes
 const (
 	ECMD_PROCESSED    = iota + 1
 	ENO_SUCH_CMD      = iota + 1
@@ -20,22 +21,11 @@ const (
 	ECMD_FAILED       = iota + 1
 )
 
-const (
-	PV_ATTR_MISSING     = 1 << iota
-	PV_ATTR_EXPORTED    = 1 << iota
-	PV_ATTR_DUPLICATE   = 1 << iota
-	PV_ATTR_ALLICATABLE = 1 << iota
-	PV_ATTR_USED        = 1 << iota
-)
-
 type Lvm struct {
 	_instance unsafe.Pointer
 }
 
-type Pv struct {
-	Path, VgName, PvFmt string
-	Attr                int
-	Size, Free          float64
+type Lv struct {
 }
 
 func (l *Lvm) lvm2Run(command string, args ...interface{}) (string, error) {
@@ -90,8 +80,13 @@ func (l *Lvm) Pvcreate(diskLabel string) error {
 }
 
 // pvs (list pvs)
-func (l *Lvm) Pvs() ([]Pv, error) {
-	output, err := l.lvm2Run("pvs --noheadings --units m --nosuffix --separator ,")
+func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
+	filterStr := ""
+	if len(filter) > 0 {
+		filterStr = strings.Join(filter, " ")
+	}
+
+	output, err := l.lvm2Run("pvs --noheadings --units m --nosuffix --separator , %s", filterStr)
 	if err != nil {
 		return []Pv{}, fmt.Errorf("pvs: %v", err)
 	}
@@ -104,26 +99,10 @@ func (l *Lvm) Pvs() ([]Pv, error) {
 		}
 
 		vals := strings.Split(pv, ",")
-
-		attrVal := 0
-		if vals[3][2] != '-' {
-			attrVal += PV_ATTR_MISSING
+		attrVal, err := ParsePvAttrs(vals[3])
+		if err != nil {
+			return []Pv{}, fmt.Errorf("pvs: %v", err)
 		}
-		if vals[3][1] != '-' {
-			attrVal += PV_ATTR_EXPORTED
-		}
-		switch vals[3][0] {
-		case 'd':
-			attrVal += PV_ATTR_DUPLICATE
-		case 'a':
-			attrVal += PV_ATTR_ALLICATABLE
-		case 'u':
-			attrVal += PV_ATTR_USED
-		case '-':
-		default:
-			return []Pv{}, fmt.Errorf("pvs: invalid pv_attr: %s", vals[3])
-		}
-
 		size, err := strconv.ParseFloat(vals[4], 64)
 		if err != nil {
 			return []Pv{}, fmt.Errorf("pvs: could not convert %s to float", vals[4])
@@ -208,6 +187,66 @@ func (l *Lvm) Vgcreate(name string, pvs ...interface{}) error {
 }
 
 // vgs (list vgs)
+func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
+	filterStr := ""
+	if len(filter) > 0 {
+		filterStr = strings.Join(filter, " ")
+	}
+
+	output, err := l.lvm2Run("vgs --noheadings --units m --nosuffix --separator , %s", filterStr)
+	if err != nil {
+		return []Vg{}, fmt.Errorf("vgs: %v", err)
+	}
+
+	vgList := []Vg{}
+	vgs := strings.Split(output, "\n")
+	for _, vg := range vgs {
+		if vg == "" {
+			continue
+		}
+
+		vals := strings.Split(vg, ",")
+		attrVal, err := ParseVgAttrs(vals[4])
+		if err != nil {
+			return []Vg{}, fmt.Errorf("vgs: %v", err)
+		}
+		size, err := strconv.ParseFloat(vals[5], 64)
+		if err != nil {
+			return []Vg{}, fmt.Errorf("vgs: could not convert %s to float", vals[4])
+		}
+		free, err := strconv.ParseFloat(vals[6], 64)
+		if err != nil {
+			return []Vg{}, fmt.Errorf("vgs: could not convert %s to float", vals[5])
+		}
+
+		// Filter Pvs matching Vg
+		pvs, err := l.Pvs()
+		if err != nil {
+			return []Vg{}, fmt.Errorf("vgs: could not get list of pvs: %v", err)
+		}
+		matchedPvs := []Pv{}
+		for _, pv := range pvs {
+			if pv.VgName == vals[0] {
+				matchedPvs = append(matchedPvs, pv)
+			}
+		}
+
+		// Filter LVs matching Vg
+		// TODO
+
+		vgList = append(vgList, Vg{
+			Name: vals[0],
+			Pvs:  matchedPvs,
+			// Lvs
+			Attr: attrVal,
+			Size: size,
+			Free: free,
+		})
+	}
+
+	return vgList, nil
+}
+
 // vgchange (activate and deactivate vg)
 // vgextend (add pv to vg)
 // vgreduce (remove pv from vg)
@@ -217,23 +256,3 @@ func (l *Lvm) Vgcreate(name string, pvs ...interface{}) error {
 // lvrename (rename lv)
 // lvresize (resize lv and fs)
 // lvremove (remove lv)
-
-func (p *Pv) IsMissing() bool {
-	return p.Attr&PV_ATTR_MISSING > 0
-}
-
-func (p *Pv) IsExported() bool {
-	return p.Attr&PV_ATTR_EXPORTED > 0
-}
-
-func (p *Pv) IsDuplicate() bool {
-	return p.Attr&PV_ATTR_DUPLICATE > 0
-}
-
-func (p *Pv) IsAllocatable() bool {
-	return p.Attr&PV_ATTR_ALLICATABLE > 0
-}
-
-func (p *Pv) IsUsed() bool {
-	return p.Attr&PV_ATTR_USED > 0
-}

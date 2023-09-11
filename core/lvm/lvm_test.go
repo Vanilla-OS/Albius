@@ -162,3 +162,11 @@ func TestVgCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestVgs(t *testing.T) {
+	vgs, err := lvm.Vgs()
+	fmt.Printf(" -> Returned: %v\n", vgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

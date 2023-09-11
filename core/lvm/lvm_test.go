@@ -244,3 +244,48 @@ func TestLvs(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestLvrename(t *testing.T) {
+	// Retrieve Lv
+	lv, err := FindLv("MyTestingVG1", "MyLv0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = lv.Rename("MyLv1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	lv, err = FindLv("MyTestingVG1", "MyLv1")
+	fmt.Printf(" -> Returned: %v\n", lv)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLvRemove(t *testing.T) {
+	// Retrieve Lv
+	lv, err := FindLv("MyTestingVG1", "MyLv1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = lv.Remove()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVgRemove(t *testing.T) {
+	// Retrieve Vg
+	vg, err := FindVg("MyTestingVG1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = vg.Remove()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

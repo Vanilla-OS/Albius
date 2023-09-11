@@ -69,9 +69,9 @@ func ParseVgAttrs(attrStr string) (int, error) {
 	return attrVal, nil
 }
 
-func FindVg(path string) (Vg, error) {
+func FindVg(name string) (Vg, error) {
 	lvm := NewLvm()
-	vgs, err := lvm.Vgs(path)
+	vgs, err := lvm.Vgs(name)
 	if err != nil {
 		return Vg{}, fmt.Errorf("findVg: %v", err)
 	}
@@ -105,6 +105,11 @@ func (v *Vg) Extend(pvs ...interface{}) error {
 func (v *Vg) Reduce(pvs ...interface{}) error {
 	lvm := NewLvm()
 	return lvm.Vgreduce(v, pvs...)
+}
+
+func (v *Vg) Remove() error {
+	lvm := NewLvm()
+	return lvm.Vgremove(v)
 }
 
 func (v *Vg) IsWritable() bool {

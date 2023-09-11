@@ -50,6 +50,11 @@ func FindPv(path string) (Pv, error) {
 	return pvs[0], nil
 }
 
+func (p *Pv) Remove() error {
+	lvm := NewLvm()
+	return lvm.Pvremove(p)
+}
+
 func (p *Pv) IsMissing() bool {
 	return p.Attr&PV_ATTR_MISSING > 0
 }

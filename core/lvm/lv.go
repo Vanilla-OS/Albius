@@ -18,6 +18,7 @@ type Lv struct {
 }
 
 type LVType string
+type LVResizeMode int
 
 const (
 	LV_TYPE_LINEAR     = "linear"
@@ -32,6 +33,11 @@ const (
 	LV_TYPE_CACHE      = "cache"
 	LV_TYPE_CACHE_POOL = "cache-pool"
 	LV_TYPE_WRITECACHE = "writecache"
+)
+
+const (
+	LV_RESIZE_EXTEND = iota
+	LV_RESIZE_SHRINK = iota
 )
 
 const (
@@ -264,4 +270,30 @@ func ParseLvAttrs(attrStr string) ([10]int, error) {
 	}
 
 	return [10]int{attrVolType, attrPermissions, attrAllocPolicy, attrFixed, attrState, attrDevice, attrTargetType, attrBlocks, attrHealth, attrSkip}, nil
+}
+
+func FindLv(vgName, lvName string) (Lv, error) {
+	lvm := NewLvm()
+	lvs, err := lvm.Lvs(vgName + "/" + lvName)
+	if err != nil {
+		return Lv{}, fmt.Errorf("findLv: %v", err)
+	}
+
+	return lvs[0], nil
+}
+
+func (l *Lv) Rename(newName string) error {
+	lvm := NewLvm()
+	newLv, err := lvm.Lvrename(l.Name, newName, l.VgName)
+	if err != nil {
+		return err
+	}
+	*l = newLv
+
+	return nil
+}
+
+func (l *Lv) Remove() error {
+	lvm := NewLvm()
+	return lvm.Lvremove(l)
 }

@@ -148,7 +148,7 @@ func (l *Lvm) Pvremove(pv interface{}) error {
 		return fmt.Errorf("pvremove: %v", err)
 	}
 
-	_, err = l.lvm2Run("pvremove %s", pvPaths[0])
+	_, err = l.lvm2Run("pvremove -y %s", pvPaths[0])
 	if err != nil {
 		return fmt.Errorf("pvremove: %v", err)
 	}
@@ -293,6 +293,21 @@ func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
 	return nil
 }
 
+// vgremove (remove vg)
+func (l *Lvm) Vgremove(vg interface{}) error {
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return fmt.Errorf("vgremove: %v", err)
+	}
+
+	_, err = l.lvm2Run("vgremove -y %s", vgName)
+	if err != nil {
+		return fmt.Errorf("vgremove: %v", err)
+	}
+
+	return nil
+}
+
 // lvcreate (create lv)
 func (l *Lvm) Lvcreate(name string, vg interface{}, lvType LVType, size float64) error {
 	vgName, err := extractNameFromVg(vg)
@@ -368,8 +383,45 @@ func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 }
 
 // lvrename (rename lv)
+func (l *Lvm) Lvrename(oldName, newName string, vg interface{}) (Lv, error) {
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return Lv{}, fmt.Errorf("lvrename: %v", err)
+	}
+
+	_, err = l.lvm2Run("lvrename %s %s %s", vgName, oldName, newName)
+	if err != nil {
+		return Lv{}, fmt.Errorf("lvrename: %v", err)
+	}
+
+	newLv, err := l.Lvs(vgName + "/" + newName)
+	if err != nil {
+		return Lv{}, fmt.Errorf("lvrename: %v", err)
+	}
+
+	return newLv[0], nil
+}
+
 // lvresize (resize lv and fs)
+// TODO: Need to implement a function to resize filesystems first
+// func (l *Lvm) Lvresize(lv interface{}, mode LVResizeMode, sizeOffset float64) error {
+// 	return nil
+// }
+
 // lvremove (remove lv)
+func (l *Lvm) Lvremove(lv interface{}) error {
+	lvName, err := extractNameFromLv(lv)
+	if err != nil {
+		return fmt.Errorf("lvremove: %v", err)
+	}
+
+	_, err = l.lvm2Run("lvremove -y %s", lvName)
+	if err != nil {
+		return fmt.Errorf("lvrename: %v", err)
+	}
+
+	return nil
+}
 
 func extractPathsFromPvs(pvs ...interface{}) ([]string, error) {
 	pvPaths := []string{}
@@ -399,4 +451,18 @@ func extractNameFromVg(vg interface{}) (string, error) {
 	}
 
 	return vgName, nil
+}
+
+func extractNameFromLv(lv interface{}) (string, error) {
+	var lvName string
+	switch lvar := lv.(type) {
+	case string:
+		lvName = lvar
+	case *Lv:
+		lvName = lvar.VgName + "/" + lvar.Name
+	default:
+		return "", errors.New("invalid type for lv. Must be either a string with the LV's path ([group_name]/[lv_name]) or a pointer to a LV struct")
+	}
+
+	return lvName, nil
 }

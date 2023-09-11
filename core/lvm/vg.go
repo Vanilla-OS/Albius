@@ -75,9 +75,36 @@ func FindVg(path string) (Vg, error) {
 	if err != nil {
 		return Vg{}, fmt.Errorf("findVg: %v", err)
 	}
-	lvm.Dispose()
 
 	return vgs[0], nil
+}
+
+// TODO: Add vgchange commands:
+// (de)activate (-a),
+// max logical volumes (-l),
+// max phisical volumes (-p)
+// set resizable (-x)
+// autobackup (-A)
+
+func (v *Vg) Rename(newName string) error {
+	lvm := NewLvm()
+	newVg, err := lvm.Vgrename(v.Name, newName)
+	if err != nil {
+		return err
+	}
+	*v = newVg
+
+	return nil
+}
+
+func (v *Vg) Extend(pvs ...interface{}) error {
+	lvm := NewLvm()
+	return lvm.Vgextend(v, pvs...)
+}
+
+func (v *Vg) Reduce(pvs ...interface{}) error {
+	lvm := NewLvm()
+	return lvm.Vgreduce(v, pvs...)
 }
 
 func (v *Vg) IsWritable() bool {

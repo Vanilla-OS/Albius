@@ -6,6 +6,7 @@ package lvm
 */
 import "C"
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -94,7 +95,7 @@ func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
 	pvList := []Pv{}
 	pvs := strings.Split(output, "\n")
 	for _, pv := range pvs {
-		if pv == "" {
+		if !strings.HasPrefix(pv, "/") {
 			continue
 		}
 
@@ -145,17 +146,12 @@ func (l *Lvm) Pvresize(pv *Pv, setPvSize ...float64) error {
 
 // pvremove (make partition stop being a pv)
 func (l *Lvm) Pvremove(pv interface{}) error {
-	pvPath := ""
-	switch pvar := pv.(type) {
-	case string:
-		pvPath += pvar
-	case Pv:
-		pvPath += pvar.Path
-	default:
-		return fmt.Errorf("invalid type for pv. Must be either a string with the PV's path or a PV struct")
+	pvPaths, err := extractPathsFromPvs(pv)
+	if err != nil {
+		return fmt.Errorf("pvremove: %v", err)
 	}
 
-	_, err := l.lvm2Run("pvremove %s", pvPath)
+	_, err = l.lvm2Run("pvremove %s", pvPaths[0])
 	if err != nil {
 		return fmt.Errorf("pvremove: %v", err)
 	}
@@ -165,20 +161,12 @@ func (l *Lvm) Pvremove(pv interface{}) error {
 
 // vgcreate (create vg)
 func (l *Lvm) Vgcreate(name string, pvs ...interface{}) error {
-	pvPaths := []string{}
-
-	for _, pv := range pvs {
-		switch pvar := pv.(type) {
-		case string:
-			pvPaths = append(pvPaths, pvar)
-		case Pv:
-			pvPaths = append(pvPaths, pvar.Path)
-		default:
-			return fmt.Errorf("invalid type for pv. Must be either a string with the PV's path or a PV struct")
-		}
+	pvPaths, err := extractPathsFromPvs(pvs...)
+	if err != nil {
+		return fmt.Errorf("vgcreate: %v", err)
 	}
 
-	_, err := l.lvm2Run("vgcreate %s %s", name, strings.Join(pvPaths, " "))
+	_, err = l.lvm2Run("vgcreate %s %s", name, strings.Join(pvPaths, " "))
 	if err != nil {
 		return fmt.Errorf("vgcreate: %v", err)
 	}
@@ -247,12 +235,99 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 	return vgList, nil
 }
 
-// vgchange (activate and deactivate vg)
+// vgrename (rename vg)
+func (l *Lvm) Vgrename(oldName, newName string) (Vg, error) {
+	_, err := l.lvm2Run("vgrename %s %s", oldName, newName)
+	if err != nil {
+		return Vg{}, fmt.Errorf("vgrename: %v", err)
+	}
+
+	newVg, err := l.Vgs(newName)
+	if err != nil {
+		return Vg{}, fmt.Errorf("vgrename: %v", err)
+	}
+
+	return newVg[0], nil
+}
+
 // vgextend (add pv to vg)
+func (l *Lvm) Vgextend(vg interface{}, pvs ...interface{}) error {
+	if len(pvs) == 0 {
+		return errors.New("vgextend: No PVs were provided")
+	}
+
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return fmt.Errorf("vgextend: %v", err)
+	}
+	pvPaths, err := extractPathsFromPvs(pvs...)
+	if err != nil {
+		return fmt.Errorf("vgextend: %v", err)
+	}
+
+	_, err = l.lvm2Run("vgextend %s %s", vgName, strings.Join(pvPaths, " "))
+	if err != nil {
+		return fmt.Errorf("vgextend: %v", err)
+	}
+
+	return nil
+}
+
 // vgreduce (remove pv from vg)
+func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
+	if len(pvs) == 0 {
+		return errors.New("vgreduce: No PVs were provided")
+	}
+
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return fmt.Errorf("vgreduce: %v", err)
+	}
+	pvPaths, err := extractPathsFromPvs(pvs...)
+	if err != nil {
+		return fmt.Errorf("vgreduce: %v", err)
+	}
+
+	_, err = l.lvm2Run("vgreduce %s %s", vgName, strings.Join(pvPaths, " "))
+	if err != nil {
+		return fmt.Errorf("vgreduce: %v", err)
+	}
+
+	return nil
+}
 
 // lvcreate (create lv)
 // lvs (list lvs)
 // lvrename (rename lv)
 // lvresize (resize lv and fs)
 // lvremove (remove lv)
+
+func extractPathsFromPvs(pvs ...interface{}) ([]string, error) {
+	pvPaths := []string{}
+	for _, pv := range pvs {
+		switch pvar := pv.(type) {
+		case string:
+			pvPaths = append(pvPaths, pvar)
+		case *Pv:
+			pvPaths = append(pvPaths, pvar.Path)
+		default:
+			return nil, errors.New("invalid type for pv. Must be either a string with the PV's path or a pointer to a PV struct")
+		}
+	}
+
+	return pvPaths, nil
+}
+
+func extractNameFromVg(vg interface{}) (string, error) {
+	var vgName string
+	switch vgvar := vg.(type) {
+	case string:
+		vgName = vgvar
+	case *Vg:
+		vgName = vgvar.Name
+	default:
+		return "", errors.New("invalid type for vg. Must be either a string with the VG's name or a pointer to a VG struct")
+	}
+
+	return vgName, nil
+}

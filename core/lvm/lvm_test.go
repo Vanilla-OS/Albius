@@ -134,7 +134,7 @@ func TestPvRemoveStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = lvm.Pvremove(pvs[0])
+	err = lvm.Pvremove(&pvs[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +157,7 @@ func TestVgCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = lvm.Vgcreate("MyTestingVG", pvs[0], lvmpart+"2")
+	err = lvm.Vgcreate("MyTestingVG", &pvs[0], lvmpart+"2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,6 +165,65 @@ func TestVgCreate(t *testing.T) {
 
 func TestVgs(t *testing.T) {
 	vgs, err := lvm.Vgs()
+	fmt.Printf(" -> Returned: %v\n", vgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVgrename(t *testing.T) {
+	// Retrieve Vg
+	vgs, err := lvm.Vgs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = vgs[0].Rename("MyTestingVG3")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vgs, err = lvm.Vgs("MyTestingVG3")
+	fmt.Printf(" -> Returned: %v\n", vgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVgReduce(t *testing.T) {
+	// Retrieve Vg
+	vgs, err := lvm.Vgs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = vgs[0].Reduce(lvmpart + "2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Retrieve Vg
+	vgs, err = lvm.Vgs()
+	fmt.Printf(" -> Returned: %v\n", vgs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVgExtend(t *testing.T) {
+	// Retrieve Vg
+	vgs, err := lvm.Vgs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = vgs[0].Extend(lvmpart + "2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Retrieve Vg
+	vgs, err = lvm.Vgs()
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)

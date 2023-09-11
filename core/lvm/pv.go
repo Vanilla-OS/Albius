@@ -46,7 +46,6 @@ func FindPv(path string) (Pv, error) {
 	if err != nil {
 		return Pv{}, fmt.Errorf("findPv: %v", err)
 	}
-	lvm.Dispose()
 
 	return pvs[0], nil
 }

@@ -48,7 +48,8 @@ void set_logger(Lvm_log *log)
 
 void init_logger()
 {
-	logger_ = lvm_log_new();
+    if (logger_ == NULL)
+	    logger_ = lvm_log_new();
 }
 
 void lvm_log_capture_fn(int level, const char *file, int line,

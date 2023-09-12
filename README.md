@@ -133,6 +133,8 @@ Some system dependencies are required for building Albius:
 - `libbtrfs-dev`
 - `libdevmapper-dev`
 - `libgpgme-dev`
+- `liblvm2-dev`
+- A C compiler supported by CGo (`gcc`, for example)
 
 After the packages listed above have been installed, all that's left to do is
 run:
@@ -140,6 +142,22 @@ run:
 ```sh
 $ go build
 ```
+
+## Testing
+
+Writing unit tests for new functionality is encouraged to make sure everything
+still works. All tests are executed in a loop device created before the
+tests are started. To execute the test suite, simply run:
+
+```sh
+$ sudo go test ./... -v
+```
+
+Sudo is necessary in order to mount the loop device, as well as run some of the
+operations. If you're in an immutable base distribution like Vanilla OS and wish
+to run the tests in an isolated environment, keep in mind that **the tests need
+to be executed in a rootful container**. You can find a script in `utils/create_test_env.sh`
+that automatically sets up a container for running Albius by using Distrobox.
 
 ## Running
 

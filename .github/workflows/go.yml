@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/vanilla-os/pico:main
-      
+
     steps:
     - uses: actions/checkout@v3
 
@@ -23,7 +23,7 @@ jobs:
     - name: Install build dependencies
       run: |
           apt-get update
-          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev
+          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev liblvm2-dev
 
     - name: Build
       run: go build -v ./...

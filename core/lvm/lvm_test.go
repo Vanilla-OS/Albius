@@ -238,8 +238,8 @@ func TestLvCreate(t *testing.T) {
 }
 
 func TestLvs(t *testing.T) {
-	vgs, err := lvm.Lvs()
-	fmt.Printf(" -> Returned: %v\n", vgs)
+	lvs, err := lvm.Lvs()
+	fmt.Printf(" -> Returned: %v\n", lvs)
 	if err != nil {
 		t.Fatal(err)
 	}

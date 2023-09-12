@@ -217,12 +217,21 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 		}
 
 		// Filter LVs matching Vg
-		// TODO
+		lvs, err := l.Lvs()
+		if err != nil {
+			return []Vg{}, fmt.Errorf("vgs: could not get list of lvs: %v", err)
+		}
+		matchedLvs := []Lv{}
+		for _, lv := range lvs {
+			if lv.VgName == vals[0] {
+				matchedLvs = append(matchedLvs, lv)
+			}
+		}
 
 		vgList = append(vgList, Vg{
 			Name: vals[0],
 			Pvs:  matchedPvs,
-			// Lvs
+			Lvs:  matchedLvs,
 			Attr: attrVal,
 			Size: size,
 			Free: free,

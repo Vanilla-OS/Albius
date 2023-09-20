@@ -17,7 +17,7 @@ const (
 	PV_ATTR_USED        = 1 << iota
 )
 
-func ParsePvAttrs(attrStr string) (int, error) {
+func parsePvAttrs(attrStr string) (int, error) {
 	attrVal := 0
 	if attrStr[2] != '-' {
 		attrVal += PV_ATTR_MISSING

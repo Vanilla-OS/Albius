@@ -221,7 +221,7 @@ var (
 	}
 )
 
-func ParseLvAttrs(attrStr string) ([10]int, error) {
+func parseLvAttrs(attrStr string) ([10]int, error) {
 	attrVolType, ok := AttrVolTypeMap[attrStr[0]]
 	if !ok {
 		return [10]int{}, fmt.Errorf("invalid lv_attr: %s", attrStr)

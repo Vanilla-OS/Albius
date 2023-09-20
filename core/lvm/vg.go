@@ -25,7 +25,7 @@ const (
 	VG_ATTR_SHARED     = 1 << iota
 )
 
-func ParseVgAttrs(attrStr string) (int, error) {
+func parseVgAttrs(attrStr string) (int, error) {
 	attrVal := 0
 	switch attrStr[5] {
 	case 'c':

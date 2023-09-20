@@ -97,7 +97,7 @@ func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
 		}
 
 		vals := strings.Split(pv, ",")
-		attrVal, err := ParsePvAttrs(vals[3])
+		attrVal, err := parsePvAttrs(vals[3])
 		if err != nil {
 			return []Pv{}, fmt.Errorf("pvs: %v", err)
 		}
@@ -124,13 +124,18 @@ func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
 }
 
 // pvresize (resize pv)
-func (l *Lvm) Pvresize(pv *Pv, setPvSize ...float64) error {
+func (l *Lvm) Pvresize(pv interface{}, setPvSize ...float64) error {
+	pvPaths, err := extractPathsFromPvs(pv)
+	if err != nil {
+		return fmt.Errorf("pvresize: %v", err)
+	}
+
 	setPvSizeOpt := ""
 	if len(setPvSize) > 0 {
 		setPvSizeOpt = fmt.Sprintf("--setphysicalvolumesize %fm", setPvSize[0])
 	}
 
-	_, err := l.lvm2Run("pvresize -y %s %s", setPvSizeOpt, pv.Path)
+	_, err = l.lvm2Run("pvresize -y %s %s", setPvSizeOpt, pvPaths[0])
 	if err != nil {
 		return fmt.Errorf("pvresize: %v", err)
 	}
@@ -191,7 +196,7 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 		}
 
 		vals := strings.Split(vg, ",")
-		attrVal, err := ParseVgAttrs(vals[4])
+		attrVal, err := parseVgAttrs(vals[4])
 		if err != nil {
 			return []Vg{}, fmt.Errorf("vgs: %v", err)
 		}
@@ -352,7 +357,7 @@ func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 		}
 
 		vals := strings.Split(lv, ",")
-		attrs, err := ParseLvAttrs(vals[2])
+		attrs, err := parseLvAttrs(vals[2])
 		if err != nil {
 			return []Lv{}, fmt.Errorf("lvs: %v", err)
 		}

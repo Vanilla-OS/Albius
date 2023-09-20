@@ -76,6 +76,93 @@ Same as `format` but encrypts the partition with LUKS2.
 - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
 - *Password* (`string`): The password used to encrypt the partition.
 
+### pvcreate
+
+Creates a new LVM physical volume from a partition.
+
+**Accepts**:
+- *Partition* (`string`): The partition to use as PV.
+
+### pvresize
+
+Resizes an LVM physical volume.
+
+**Accepts**:
+- *PV* (`string`): The physical volume path.
+- *Size* (optional `float`): The PV's desired size in MiB. If not provided, the PV will expand to the size of the underlying partition.
+
+### pvremove
+
+Remove LVM labels from a partition.
+
+**Accepts**:
+- *PV* (`string`): The physical volume path.
+
+### vgcreate
+
+Creates a new LVM volume group.
+
+**Accepts**:
+- *Name* (`string`): The VG name.
+- *PVs* (optional `[string]`): List containing paths for PVs to add to the newly created VG.
+
+### vgrename
+
+Renames an LVM volume group.
+
+**Accepts**:
+- *OldName* (`string`): The VG's current name.
+- *NewName* (`string`): The VG's new name.
+
+### vgextend
+
+Adds PVs to an LVM volume group.
+
+**Accepts**:
+- *Name* (`string`): The target VG's name.
+- *PVs* (`[string]`): A list containing the paths of the PVs to be included.
+
+### vgreduce
+
+Removes PVs to an LVM volume group.
+
+**Accepts**:
+- *Name* (`string`): The target VG's name.
+- *PVs* (`[string]`): A list containing the paths of the PVs to be removed.
+
+### vgremove
+
+Deletes LVM volume group.
+
+**Accepts**:
+- *Name* (`string`): The volume group name.
+
+### lvcreate
+
+Create LVM logical volume.
+
+**Accepts**:
+- *Name* (`string`): Logical volume name.
+- *VG* (`string`): Volume group name.
+- *Type* (`string`): Logical volume type. See lvcreate(8) for available types.
+- *Size* (`float`): Volume group size in MiB.
+
+### lvrename
+
+Renames an LVM logical volume.
+
+**Accepts**:
+- *OldName* (`string`): The LV's current name.
+- *NewName* (`string`): The LV's new name.
+- *VG* (`string`): Volume group the LV belongs to.
+
+### lvremove
+
+Deletes LVM logical volume.
+
+**Accepts**:
+- *Name* (`string`): The logical volume name.
+
 --- 
 
 ## Post-Installation 

@@ -450,7 +450,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *Name* (`string`): Logical volume name.
 	 * - *VG* (`string`): Volume group name.
 	 * - *Type* (`string`): Logical volume type. See lvcreate(8) for available types.
-	 * - *Size* (`float`): Volume group size in MiB.
+	 * - *Size* (`float`): Logical volume size in MiB.
 	 */
 	case "lvcreate":
 		name := args[0].(string)
@@ -488,6 +488,41 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "lvremove":
 		name := args[0].(string)
 		err := LvmInstance.Lvremove(name)
+		if err != nil {
+			return err
+		}
+	/* !! ### make-thin-pool
+	 *
+	 * Creates a new LVM thin pool from two LVs: one for metadata and another one for the data itself.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The created thin pool name.
+	 * - *ThinDataLV* (`string`): The LV for storing data.
+	 * - *ThinMetaLV* (`string`): The LV for storing pool metadata.
+	 */
+	case "make-thin-pool":
+		thinDataLV := args[0].(string)
+		thinMetaLV := args[1].(string)
+		err := lvm.MakeThinPool(thinMetaLV, thinDataLV)
+		if err != nil {
+			return err
+		}
+	/* !! ### lvcreate-thin
+	 *
+	 * Same as `lvcreate`, but creates a thin LV instead.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name.
+	 * - *VG* (`string`): Volume group name.
+	 * - *Size* (`float`): Volume group size in MiB.
+	 * - *Thinpool* (`string`): Name of the thin pool to create the LV from.
+	 */
+	case "lvcreate-thin":
+		name := args[0].(string)
+		vg := args[1].(string)
+		vgSize := args[2].(float64)
+		thinPool := args[3].(string)
+		err := LvmInstance.LvThinCreate(name, vg, thinPool, vgSize)
 		if err != nil {
 			return err
 		}

@@ -282,6 +282,25 @@ func FindLv(vgName, lvName string) (Lv, error) {
 	return lvs[0], nil
 }
 
+func MakeThinPool(poolMetadata, pool interface{}) error {
+	poolMetadataName, err := extractNameFromLv(poolMetadata)
+	if err != nil {
+		return err
+	}
+	poolName, err := extractNameFromLv(pool)
+	if err != nil {
+		return err
+	}
+
+	lvm := NewLvm()
+	_, err = lvm.lvm2Run("lvconvert --type thin-pool --poolmetadata %s %s", poolMetadataName, poolName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (l *Lv) Rename(newName string) error {
 	lvm := NewLvm()
 	newLv, err := lvm.Lvrename(l.Name, newName, l.VgName)

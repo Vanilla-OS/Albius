@@ -337,6 +337,25 @@ func (l *Lvm) Lvcreate(name string, vg interface{}, lvType LVType, size float64)
 	return nil
 }
 
+func (l *Lvm) LvThinCreate(name string, vg, pool interface{}, size float64) error {
+	vgName, err := extractNameFromVg(vg)
+	if err != nil {
+		return fmt.Errorf("lvmThinCreate: %v", err)
+	}
+
+	poolName, err := extractNameFromPool(pool)
+	if err != nil {
+		return fmt.Errorf("lvmThinCreate: %v", err)
+	}
+
+	_, err = l.lvm2Run("lvcreate -y -n %s -V %.2fm %s %s", name, size, poolName, vgName)
+	if err != nil {
+		return fmt.Errorf("lvmThinCreate: %v", err)
+	}
+
+	return nil
+}
+
 // lvs (list lvs)
 func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 	filterStr := ""
@@ -479,4 +498,18 @@ func extractNameFromLv(lv interface{}) (string, error) {
 	}
 
 	return lvName, nil
+}
+
+func extractNameFromPool(pool interface{}) (string, error) {
+	var poolName string
+	switch lvar := pool.(type) {
+	case string:
+		poolName = lvar
+	case *Lv:
+		poolName = lvar.Name
+	default:
+		return "", errors.New("invalid type for pool. Must be either a string with the pool's name or a pointer to a LV struct")
+	}
+
+	return poolName, nil
 }

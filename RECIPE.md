@@ -145,7 +145,7 @@ Create LVM logical volume.
 - *Name* (`string`): Logical volume name.
 - *VG* (`string`): Volume group name.
 - *Type* (`string`): Logical volume type. See lvcreate(8) for available types.
-- *Size* (`float`): Volume group size in MiB.
+- *Size* (`float`): Logical volume size in MiB.
 
 ### lvrename
 
@@ -162,6 +162,25 @@ Deletes LVM logical volume.
 
 **Accepts**:
 - *Name* (`string`): The logical volume name.
+
+### make-thin-pool
+
+Creates a new LVM thin pool from two LVs: one for metadata and another one for the data itself.
+
+**Accepts**:
+- *Name* (`string`): The created thin pool name.
+- *ThinDataLV* (`string`): The LV for storing data.
+- *ThinMetaLV* (`string`): The LV for storing pool metadata.
+
+### lvcreate-thin
+
+Same as `lvcreate`, but creates a thin LV instead.
+
+**Accepts**:
+- *Name* (`string`): Thin logical volume name.
+- *VG* (`string`): Volume group name.
+- *Size* (`float`): Volume group size in MiB.
+- *Thinpool* (`string`): Name of the thin pool to create the LV from.
 
 --- 
 

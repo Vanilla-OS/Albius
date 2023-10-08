@@ -144,7 +144,7 @@ Create LVM logical volume.
 **Accepts**:
 - *Name* (`string`): Logical volume name.
 - *VG* (`string`): Volume group name.
-- *Type* (`string`): Logical volume type. See lvcreate(8) for available types.
+- *Type* (`string`): Logical volume type. See lvcreate(8) for available types. If unsure, use `linear`.
 - *Size* (`float`): Logical volume size in MiB.
 
 ### lvrename
@@ -169,8 +169,8 @@ Creates a new LVM thin pool from two LVs: one for metadata and another one for t
 
 **Accepts**:
 - *Name* (`string`): The created thin pool name.
-- *ThinDataLV* (`string`): The LV for storing data.
-- *ThinMetaLV* (`string`): The LV for storing pool metadata.
+- *ThinDataLV* (`string`): The LV for storing data (in format `vg_name/lv_name`).
+- *ThinMetaLV* (`string`): The LV for storing pool metadata (in format `vg_name/lv_name`).
 
 ### lvcreate-thin
 
@@ -181,6 +181,14 @@ Same as `lvcreate`, but creates a thin LV instead.
 - *VG* (`string`): Volume group name.
 - *Size* (`float`): Volume group size in MiB.
 - *Thinpool* (`string`): Name of the thin pool to create the LV from.
+
+### lvm-format
+
+Same as `format`, but formats an LVM logical volume.
+
+**Accepts**:
+- *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
+- *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
 
 --- 
 

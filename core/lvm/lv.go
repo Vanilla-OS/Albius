@@ -272,9 +272,19 @@ func parseLvAttrs(attrStr string) ([10]int, error) {
 	return [10]int{attrVolType, attrPermissions, attrAllocPolicy, attrFixed, attrState, attrDevice, attrTargetType, attrBlocks, attrHealth, attrSkip}, nil
 }
 
-func FindLv(vgName, lvName string) (Lv, error) {
+// FindLv fetches an LVM logical volume by its name. You can pass the name
+// either as a single string (as in `vg_name/lv_name`) or as two separate
+// variables, where the first is the VG name and, the second, the LV name.
+func FindLv(name string, lvName ...string) (Lv, error) {
+	var fullName string
+	if len(lvName) == 0 {
+		fullName = name
+	} else {
+		fullName = name + "/" + lvName[0]
+	}
+
 	lvm := NewLvm()
-	lvs, err := lvm.Lvs(vgName + "/" + lvName)
+	lvs, err := lvm.Lvs(fullName)
 	if err != nil {
 		return Lv{}, fmt.Errorf("findLv: %v", err)
 	}

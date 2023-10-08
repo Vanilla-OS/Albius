@@ -449,7 +449,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * **Accepts**:
 	 * - *Name* (`string`): Logical volume name.
 	 * - *VG* (`string`): Volume group name.
-	 * - *Type* (`string`): Logical volume type. See lvcreate(8) for available types.
+	 * - *Type* (`string`): Logical volume type. See lvcreate(8) for available types. If unsure, use `linear`.
 	 * - *Size* (`float`): Logical volume size in MiB.
 	 */
 	case "lvcreate":
@@ -497,8 +497,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 *
 	 * **Accepts**:
 	 * - *Name* (`string`): The created thin pool name.
-	 * - *ThinDataLV* (`string`): The LV for storing data.
-	 * - *ThinMetaLV* (`string`): The LV for storing pool metadata.
+	 * - *ThinDataLV* (`string`): The LV for storing data (in format `vg_name/lv_name`).
+	 * - *ThinMetaLV* (`string`): The LV for storing pool metadata (in format `vg_name/lv_name`).
 	 */
 	case "make-thin-pool":
 		thinDataLV := args[0].(string)
@@ -525,6 +525,29 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err := LvmInstance.LvThinCreate(name, vg, thinPool, vgSize)
 		if err != nil {
 			return err
+		}
+	/* !! ### lvm-format
+	 *
+	 * Same as `format`, but formats an LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 */
+	case "lvm-format":
+		name := args[0].(string)
+		filesystem := args[1].(string)
+		lv, err := lvm.FindLv(name)
+		if err != nil {
+			return err
+		}
+		dummyPart := Partition{
+			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
+			Filesystem: PartitionFs(filesystem),
+		}
+		err = MakeFs(&dummyPart)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! --- */
 	default:

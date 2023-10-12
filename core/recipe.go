@@ -294,11 +294,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part.Filesystem = PartitionFs(filesystem)
 		err = LuksFormat(&part, password)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = LUKSMakeFs(&part)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### pvcreate
 	 *
@@ -311,7 +311,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part := args[0].(string)
 		err := LvmInstance.Pvcreate(part)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### pvresize
 	 *
@@ -331,7 +331,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			err = LvmInstance.Pvresize(part)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### pvremove
 	 *
@@ -344,7 +344,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part := args[0].(string)
 		err := LvmInstance.Pvremove(part)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### vgcreate
 	 *
@@ -368,7 +368,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := LvmInstance.Vgcreate(name, pvList...)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### vgrename
 	 *
@@ -383,7 +383,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		newName := args[1].(string)
 		_, err := LvmInstance.Vgrename(oldName, newName)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### vgextend
 	 *
@@ -405,7 +405,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := LvmInstance.Vgextend(name, pvList...)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### vgreduce
 	 *
@@ -427,7 +427,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := LvmInstance.Vgreduce(name, pvList...)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### vgremove
 	 *
@@ -440,7 +440,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		name := args[0].(string)
 		err := LvmInstance.Vgremove(name)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### lvcreate
 	 *
@@ -459,7 +459,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vgSize := args[3].(float64)
 		err := LvmInstance.Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### lvrename
 	 *
@@ -476,7 +476,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vg := args[2].(string)
 		_, err := LvmInstance.Lvrename(oldName, newName, vg)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### lvremove
 	 *
@@ -489,7 +489,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		name := args[0].(string)
 		err := LvmInstance.Lvremove(name)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### make-thin-pool
 	 *
@@ -505,7 +505,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		thinMetaLV := args[1].(string)
 		err := lvm.MakeThinPool(thinMetaLV, thinDataLV)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### lvcreate-thin
 	 *
@@ -524,7 +524,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		thinPool := args[3].(string)
 		err := LvmInstance.LvThinCreate(name, vg, thinPool, vgSize)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### lvm-format
 	 *
@@ -539,7 +539,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		filesystem := args[1].(string)
 		lv, err := lvm.FindLv(name)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		dummyPart := Partition{
 			Path:       "/dev/" + lv.VgName + "/" + lv.Name,

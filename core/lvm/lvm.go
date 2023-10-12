@@ -348,7 +348,7 @@ func (l *Lvm) LvThinCreate(name string, vg, pool interface{}, size float64) erro
 		return fmt.Errorf("lvmThinCreate: %v", err)
 	}
 
-	_, err = l.lvm2Run("lvcreate -y -n %s -V %.2fm %s %s", name, size, poolName, vgName)
+	_, err = l.lvm2Run("lvcreate -y -n %s -V %.2fm --thinpool %s %s", name, size, poolName, vgName)
 	if err != nil {
 		return fmt.Errorf("lvmThinCreate: %v", err)
 	}

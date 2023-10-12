@@ -473,7 +473,6 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * Creates a new LVM thin pool from two LVs: one for metadata and another one for the data itself.
 	 *
 	 * **Accepts**:
-	 * - *Name* (`string`): The created thin pool name.
 	 * - *ThinDataLV* (`string`): The LV for storing data (in format `vg_name/lv_name`).
 	 * - *ThinMetaLV* (`string`): The LV for storing pool metadata (in format `vg_name/lv_name`).
 	 */

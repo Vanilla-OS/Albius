@@ -386,17 +386,10 @@ func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 			return []Lv{}, fmt.Errorf("lvs: could not convert %s to float", vals[5])
 		}
 
-		pool := -1.0
-		if vals[4] != "" {
-			pool, err = strconv.ParseFloat(vals[4], 64)
-			if err != nil {
-				return []Lv{}, fmt.Errorf("lvs: could not convert %s to float", vals[5])
-			}
-		}
-
 		lvList = append(lvList, Lv{
 			Name:            vals[0],
 			VgName:          vals[1],
+			Pool:            vals[4],
 			AttrVolType:     attrs[0],
 			AttrPermissions: attrs[1],
 			AttrAllocPolicy: attrs[2],
@@ -408,7 +401,6 @@ func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 			AttrHealth:      attrs[8],
 			AttrSkip:        attrs[9],
 			Size:            size,
-			Pool:            pool,
 		})
 	}
 

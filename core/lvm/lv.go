@@ -3,18 +3,18 @@ package lvm
 import "fmt"
 
 type Lv struct {
-	Name, VgName    string
-	AttrVolType     int
-	AttrPermissions int
-	AttrAllocPolicy int
-	AttrFixed       int
-	AttrState       int
-	AttrDevice      int
-	AttrTargetType  int
-	AttrBlocks      int
-	AttrHealth      int
-	AttrSkip        int
-	Size, Pool      float64
+	Name, VgName, Pool string
+	AttrVolType        int
+	AttrPermissions    int
+	AttrAllocPolicy    int
+	AttrFixed          int
+	AttrState          int
+	AttrDevice         int
+	AttrTargetType     int
+	AttrBlocks         int
+	AttrHealth         int
+	AttrSkip           int
+	Size               float64
 }
 
 type LVType string

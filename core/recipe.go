@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -63,31 +62,9 @@ func ReadRecipe(path string) (*Recipe, error) {
 	}
 
 	var recipe Recipe
-	dec := json.NewDecoder(strings.NewReader(string(content)))
-	dec.DisallowUnknownFields()
-	dec.UseNumber()
-	err = dec.Decode(&recipe)
+	err = json.Unmarshal(content, &recipe)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read recipe: %s", err)
-	}
-
-	// Convert json.Number to int64
-	for i := 0; i < len(recipe.Setup); i++ {
-		step := &recipe.Setup[i]
-		formattedParams := []interface{}{}
-		for _, param := range step.Params {
-			dummy := "1"
-			if reflect.TypeOf(param) == reflect.TypeOf(dummy) {
-				convertedParam, err := param.(json.Number).Int64()
-				if err != nil {
-					return nil, fmt.Errorf("failed to convert recipe parameter: %s", err)
-				}
-				formattedParams = append(formattedParams, convertedParam)
-			} else {
-				formattedParams = append(formattedParams, param)
-			}
-		}
-		step.Params = formattedParams
 	}
 
 	return &recipe, nil
@@ -134,8 +111,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "mkpart":
 		name := args[0].(string)
 		fsType := PartitionFs(args[1].(string))
-		start := args[2].(int64)
-		end := args[3].(int64)
+		start := int(args[2].(float64))
+		end := int(args[3].(float64))
 		if len(args) > 4 && strings.HasPrefix(string(fsType), "luks-") {
 			luksPassword := args[4].(string)
 			part, err := disk.NewPartition(name, "", start, end)

@@ -146,7 +146,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 // If fsType is an empty string, the function will skip creating the filesystem.
 // This can be useful when creating LUKS-encrypted partitions, where the format
 // operation needs to be executed first.
-func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int64) (*Partition, error) {
+func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int) (*Partition, error) {
 	createPartCmd := "parted -s %s unit MiB mkpart%s%s %s %d %s"
 
 	var partType string

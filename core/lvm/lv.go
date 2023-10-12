@@ -303,7 +303,7 @@ func MakeThinPool(poolMetadata, pool interface{}) error {
 	}
 
 	lvm := NewLvm()
-	_, err = lvm.lvm2Run("lvconvert --type thin-pool --poolmetadata %s %s", poolMetadataName, poolName)
+	_, err = lvm.lvm2Run("lvconvert -y --type thin-pool --poolmetadata %s %s", poolMetadataName, poolName)
 	if err != nil {
 		return err
 	}

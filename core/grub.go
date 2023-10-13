@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -107,7 +108,7 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		}
 	}
 
-	grubInstallCmd := "grub-install --boot-directory %s --target=%s --uefi-secure-boot %s"
+	grubInstallCmd := "grub-install --bootloader-id=debian --boot-directory %s --target=%s --uefi-secure-boot %s"
 
 	var err error
 	if targetRoot != "" {
@@ -115,6 +116,22 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 	} else {
 		err = RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
 	}
+	if err != nil {
+		return fmt.Errorf("Failed to run grub-install: %s", err)
+	}
+
+	if targetRoot != "" {
+		return nil
+	}
+
+	// FIXME: This is needed on Vanilla due to some recent GRUB change. If you're using Debian sid as
+	// base, consider keeping it.
+	efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=vanilla --loader=\"\\EFI\\debian\\shimx64.efi\""
+	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
+	partExpr := regexp.MustCompile("[0-9]+$")
+	diskName := diskExpr.FindString(diskPath)
+	part := partExpr.FindString(diskPath)
+	err = RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
 	if err != nil {
 		return fmt.Errorf("Failed to run grub-install: %s", err)
 	}

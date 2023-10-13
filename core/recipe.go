@@ -795,9 +795,6 @@ func (recipe *Recipe) SetupMountpoints() error {
 	diskCache := map[string]*Disk{}
 	rootAMounted := false
 
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
-
 	/* We need to mount the partitions in order to prevent one mountpoint
 	 * from overriding another.
 	 * For example, if we mount /boot first in /mnt/a/boot and then mount / in
@@ -819,9 +816,37 @@ func (recipe *Recipe) SetupMountpoints() error {
 		mount_depth += 1
 	}
 
+	lvmExpr := regexp.MustCompile(`^/dev/(?P<vg>[\w-]+)/(?P<lv>[\w-]+)$`)
+	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
+	partExpr := regexp.MustCompile("[0-9]+$")
+
 	for _, mnt := range ordered_mountpoints {
+		baseRoot := RootA
+		if mnt.Target == "/" && rootAMounted {
+			baseRoot = RootB
+		} else if mnt.Target == "/" && !rootAMounted {
+			rootAMounted = true
+		}
+
+		// LVM partition
+		if lvmExpr.MatchString(mnt.Partition) {
+			lvmPartition := Partition{
+				Number: -1,
+				Path:   mnt.Partition,
+			}
+			err := lvmPartition.Mount(baseRoot + mnt.Target)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Regular partition
 		diskName := diskExpr.FindString(mnt.Partition)
-		part := partExpr.FindString(mnt.Partition)
+		part, err := strconv.Atoi(partExpr.FindString(mnt.Partition))
+		if err != nil {
+			return err
+		}
 
 		disk, ok := diskCache[diskName]
 		if !ok {
@@ -833,19 +858,7 @@ func (recipe *Recipe) SetupMountpoints() error {
 			disk = diskCache[diskName]
 		}
 
-		partInt, err := strconv.Atoi(part)
-		if err != nil {
-			return err
-		}
-
-		baseRoot := RootA
-		if mnt.Target == "/" && rootAMounted {
-			baseRoot = RootB
-		} else if mnt.Target == "/" && !rootAMounted {
-			rootAMounted = true
-		}
-
-		err = disk.Partitions[partInt-1].Mount(baseRoot + mnt.Target)
+		err = disk.Partitions[part-1].Mount(baseRoot + mnt.Target)
 		if err != nil {
 			return err
 		}

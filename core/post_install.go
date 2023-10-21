@@ -30,14 +30,13 @@ func SetTimezone(targetRoot, tz string) error {
 }
 
 func AddUser(targetRoot, username, fullname string, groups []string, withPassword bool, password ...string) error {
-	// TODO: "adduser" isn't distro agnostic. Change to "useradd"?
-	adduserCmd := "adduser --quiet --disabled-password --shell /bin/bash --gecos \"%s\" %s"
+	adduserCmd := "useradd --shell /bin/bash %s && usermod -c \"%s\" %s"
 
 	var err error
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, fullname, username))
+		err = RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, username, fullname, username))
 	} else {
-		err = RunCommand(fmt.Sprintf(adduserCmd, fullname, username))
+		err = RunCommand(fmt.Sprintf(adduserCmd, username, fullname, username))
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to create user: %s", err)

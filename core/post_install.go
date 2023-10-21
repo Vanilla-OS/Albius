@@ -9,7 +9,7 @@ import (
 )
 
 func SetTimezone(targetRoot, tz string) error {
-	tzPath := targetRoot + "/etc/timezone\n"
+	tzPath := targetRoot + "/etc/timezone"
 
 	err := os.WriteFile(tzPath, []byte(tz), 0644)
 	if err != nil {

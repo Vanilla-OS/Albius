@@ -264,6 +264,7 @@ Install GRUB to the specified partition.
 - *BootDirectory* (`string`): The path for the boot dir (usually `/boot`).
 - *InstallDevice* (`string`): The disk where the boot partition is located.
 - *Target* (`string`): The target firmware. Either `bios` for legacy systems or `efi` for UEFI systems.
+- *EFIDevice* (optional `string`): Only required for EFI installations. The partition where the EFI is located.
 
 ### grub-default-config
 

@@ -1,3 +1,9 @@
+albius (0.2.11) unstable; urgency=critical
+
+  * Fix: Broken Grub install
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 15 Oct 2023 16:16:00 -0300
+
 albius (0.2.10) unstable; urgency=critical
 
   * Fix: Fix incorrect parsing of IsMounted function

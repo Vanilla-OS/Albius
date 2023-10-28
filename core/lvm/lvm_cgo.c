@@ -49,7 +49,7 @@ void set_logger(Lvm_log *log)
 void init_logger()
 {
     if (logger_ == NULL)
-	    logger_ = lvm_log_new();
+        logger_ = lvm_log_new();
 }
 
 void lvm_log_capture_fn(int level, const char *file, int line,
@@ -59,11 +59,11 @@ void lvm_log_capture_fn(int level, const char *file, int line,
         return;
 
     size_t log_len = strlen(format);
-    char *out      = (char *)malloc(log_len * sizeof(char));
+
+    char *out = (char *)malloc(log_len * sizeof(char));
     memcpy(out, format, log_len + 1);
 
-	Lvm_log *log = logger();
-    lvm_log_push(&log, out);
+    lvm_log_push(&logger_, out);
 
     return;
 }

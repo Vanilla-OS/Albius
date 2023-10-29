@@ -53,7 +53,7 @@ type PostStep struct {
 	Params    []interface{}
 }
 
-var LvmInstance lvm.Lvm = lvm.NewLvm()
+var lvmInstance *lvm.Lvm = nil
 
 func ReadRecipe(path string) (*Recipe, error) {
 	content, err := os.ReadFile(path)
@@ -286,7 +286,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "pvcreate":
 		part := args[0].(string)
-		err := LvmInstance.Pvcreate(part)
+		err := getOrInitLvm().Pvcreate(part)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -303,9 +303,9 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		var err error
 		if len(args) > 1 {
 			size := args[1].(float64)
-			err = LvmInstance.Pvresize(part, size)
+			err = getOrInitLvm().Pvresize(part, size)
 		} else {
-			err = LvmInstance.Pvresize(part)
+			err = getOrInitLvm().Pvresize(part)
 		}
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
@@ -319,7 +319,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "pvremove":
 		part := args[0].(string)
-		err := LvmInstance.Pvremove(part)
+		err := getOrInitLvm().Pvremove(part)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -343,7 +343,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for i, p := range pvs {
 			pvList[i] = p
 		}
-		err := LvmInstance.Vgcreate(name, pvList...)
+		err := getOrInitLvm().Vgcreate(name, pvList...)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -358,7 +358,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "vgrename":
 		oldName := args[0].(string)
 		newName := args[1].(string)
-		_, err := LvmInstance.Vgrename(oldName, newName)
+		_, err := getOrInitLvm().Vgrename(oldName, newName)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -380,7 +380,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for i, p := range pvs {
 			pvList[i] = p
 		}
-		err := LvmInstance.Vgextend(name, pvList...)
+		err := getOrInitLvm().Vgextend(name, pvList...)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -402,7 +402,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for i, p := range pvs {
 			pvList[i] = p
 		}
-		err := LvmInstance.Vgreduce(name, pvList...)
+		err := getOrInitLvm().Vgreduce(name, pvList...)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -415,7 +415,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "vgremove":
 		name := args[0].(string)
-		err := LvmInstance.Vgremove(name)
+		err := getOrInitLvm().Vgremove(name)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -434,7 +434,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vg := args[1].(string)
 		lvType := args[2].(string)
 		vgSize := args[3].(float64)
-		err := LvmInstance.Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
+		err := getOrInitLvm().Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -451,7 +451,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		oldName := args[0].(string)
 		newName := args[1].(string)
 		vg := args[2].(string)
-		_, err := LvmInstance.Lvrename(oldName, newName, vg)
+		_, err := getOrInitLvm().Lvrename(oldName, newName, vg)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -464,7 +464,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "lvremove":
 		name := args[0].(string)
-		err := LvmInstance.Lvremove(name)
+		err := getOrInitLvm().Lvremove(name)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -498,7 +498,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vg := args[1].(string)
 		vgSize := args[2].(float64)
 		thinPool := args[3].(string)
-		err := LvmInstance.LvThinCreate(name, vg, thinPool, vgSize)
+		err := getOrInitLvm().LvThinCreate(name, vg, thinPool, vgSize)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
@@ -1020,4 +1020,13 @@ func (recipe *Recipe) Install() error {
 	}
 
 	return nil
+}
+
+func getOrInitLvm() *lvm.Lvm {
+	if lvmInstance == nil {
+		l := lvm.NewLvm()
+		lvmInstance = &l
+	}
+
+	return lvmInstance
 }

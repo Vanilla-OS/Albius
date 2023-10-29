@@ -10,14 +10,14 @@ import (
 )
 
 var (
-	lvmInstance lvm.Lvm
-	device      string
-	lvmpart     string
+	testLvm lvm.Lvm
+	device  string
+	lvmpart string
 )
 
 func TestMain(m *testing.M) {
 	// Create LVM wrapper instance
-	lvmInstance = lvm.NewLvm()
+	testLvm = lvm.NewLvm()
 
 	// Setup testing device
 	// Create dummy image
@@ -68,19 +68,19 @@ func TestMain(m *testing.M) {
 	}
 
 	// Cleanup
-	lvmInstance.Dispose()
+	testLvm.Dispose()
 	os.Exit(status)
 }
 
 func TestPvcreate(t *testing.T) {
-	err := lvmInstance.Pvcreate(lvmpart + "1")
+	err := testLvm.Pvcreate(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPvs(t *testing.T) {
-	pvs, err := lvmInstance.Pvs()
+	pvs, err := testLvm.Pvs()
 	fmt.Printf(" -> Returned: %v\n", pvs)
 	if err != nil {
 		t.Fatal(err)
@@ -88,27 +88,27 @@ func TestPvs(t *testing.T) {
 }
 
 func TestPvResize(t *testing.T) {
-	pvs, err := lvmInstance.Pvs()
+	pvs, err := testLvm.Pvs()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = lvmInstance.Pvresize(&pvs[0])
+	err = testLvm.Pvresize(&pvs[0])
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestPvShrink(t *testing.T) {
-	pvs, err := lvmInstance.Pvs()
+	pvs, err := testLvm.Pvs()
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = lvmInstance.Pvresize(&pvs[0], 10.0)
+	err = testLvm.Pvresize(&pvs[0], 10.0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pvs, err = lvmInstance.Pvs()
+	pvs, err = testLvm.Pvs()
 	fmt.Printf(" -> New size: %v\n", pvs)
 	if err != nil {
 		t.Fatal(err)
@@ -116,7 +116,7 @@ func TestPvShrink(t *testing.T) {
 }
 
 func TestPvRemoveStr(t *testing.T) {
-	err := lvmInstance.Pvremove(lvmpart + "1")
+	err := testLvm.Pvremove(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,17 +124,17 @@ func TestPvRemoveStr(t *testing.T) {
 
 func TestPvRemoveStruct(t *testing.T) {
 	// Recreate PV removed by previous test
-	err := lvmInstance.Pvcreate(lvmpart + "1")
+	err := testLvm.Pvcreate(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pvs, err := lvmInstance.Pvs(lvmpart + "1")
+	pvs, err := testLvm.Pvs(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = lvmInstance.Pvremove(&pvs[0])
+	err = testLvm.Pvremove(&pvs[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,29 +142,29 @@ func TestPvRemoveStruct(t *testing.T) {
 
 func TestVgCreate(t *testing.T) {
 	// Create two testing PVs
-	err := lvmInstance.Pvcreate(lvmpart + "1")
+	err := testLvm.Pvcreate(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = lvmInstance.Pvcreate(lvmpart + "2")
+	err = testLvm.Pvcreate(lvmpart + "2")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Pass one PV as struct and another as string
-	pvs, err := lvmInstance.Pvs(lvmpart + "1")
+	pvs, err := testLvm.Pvs(lvmpart + "1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = lvmInstance.Vgcreate("MyTestingVG", &pvs[0], lvmpart+"2")
+	err = testLvm.Vgcreate("MyTestingVG", &pvs[0], lvmpart+"2")
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestVgs(t *testing.T) {
-	vgs, err := lvmInstance.Vgs()
+	vgs, err := testLvm.Vgs()
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)
@@ -173,7 +173,7 @@ func TestVgs(t *testing.T) {
 
 func TestVgrename(t *testing.T) {
 	// Retrieve Vg
-	vgs, err := lvmInstance.Vgs()
+	vgs, err := testLvm.Vgs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestVgrename(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	vgs, err = lvmInstance.Vgs("MyTestingVG1")
+	vgs, err = testLvm.Vgs("MyTestingVG1")
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func TestVgrename(t *testing.T) {
 
 func TestVgReduce(t *testing.T) {
 	// Retrieve Vg
-	vgs, err := lvmInstance.Vgs()
+	vgs, err := testLvm.Vgs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func TestVgReduce(t *testing.T) {
 	}
 
 	// Retrieve Vg
-	vgs, err = lvmInstance.Vgs()
+	vgs, err = testLvm.Vgs()
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)
@@ -212,7 +212,7 @@ func TestVgReduce(t *testing.T) {
 
 func TestVgExtend(t *testing.T) {
 	// Retrieve Vg
-	vgs, err := lvmInstance.Vgs()
+	vgs, err := testLvm.Vgs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestVgExtend(t *testing.T) {
 	}
 
 	// Retrieve Vg
-	vgs, err = lvmInstance.Vgs()
+	vgs, err = testLvm.Vgs()
 	fmt.Printf(" -> Returned: %v\n", vgs)
 	if err != nil {
 		t.Fatal(err)
@@ -231,14 +231,14 @@ func TestVgExtend(t *testing.T) {
 }
 
 func TestLvCreate(t *testing.T) {
-	err := lvmInstance.Lvcreate("MyLv0", "MyTestingVG1", lvm.LV_TYPE_LINEAR, 30)
+	err := testLvm.Lvcreate("MyLv0", "MyTestingVG1", lvm.LV_TYPE_LINEAR, 30)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestLvs(t *testing.T) {
-	lvs, err := lvmInstance.Lvs()
+	lvs, err := testLvm.Lvs()
 	fmt.Printf(" -> Returned: %v\n", lvs)
 	if err != nil {
 		t.Fatal(err)

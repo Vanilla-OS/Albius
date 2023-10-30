@@ -70,8 +70,7 @@ func parseVgAttrs(attrStr string) (int, error) {
 }
 
 func FindVg(name string) (Vg, error) {
-	lvm := NewLvm()
-	vgs, err := lvm.Vgs(name)
+	vgs, err := Vgs(name)
 	if err != nil {
 		return Vg{}, fmt.Errorf("findVg: %v", err)
 	}
@@ -87,8 +86,7 @@ func FindVg(name string) (Vg, error) {
 // autobackup (-A)
 
 func (v *Vg) Rename(newName string) error {
-	lvm := NewLvm()
-	newVg, err := lvm.Vgrename(v.Name, newName)
+	newVg, err := Vgrename(v.Name, newName)
 	if err != nil {
 		return err
 	}
@@ -98,18 +96,15 @@ func (v *Vg) Rename(newName string) error {
 }
 
 func (v *Vg) Extend(pvs ...interface{}) error {
-	lvm := NewLvm()
-	return lvm.Vgextend(v, pvs...)
+	return Vgextend(v, pvs...)
 }
 
 func (v *Vg) Reduce(pvs ...interface{}) error {
-	lvm := NewLvm()
-	return lvm.Vgreduce(v, pvs...)
+	return Vgreduce(v, pvs...)
 }
 
 func (v *Vg) Remove() error {
-	lvm := NewLvm()
-	return lvm.Vgremove(v)
+	return Vgremove(v)
 }
 
 func (v *Vg) IsWritable() bool {

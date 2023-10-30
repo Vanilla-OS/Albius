@@ -283,8 +283,7 @@ func FindLv(name string, lvName ...string) (Lv, error) {
 		fullName = name + "/" + lvName[0]
 	}
 
-	lvm := NewLvm()
-	lvs, err := lvm.Lvs(fullName)
+	lvs, err := Lvs(fullName)
 	if err != nil {
 		return Lv{}, fmt.Errorf("findLv: %v", err)
 	}
@@ -302,8 +301,7 @@ func MakeThinPool(poolMetadata, pool interface{}) error {
 		return err
 	}
 
-	lvm := NewLvm()
-	_, err = lvm.lvm2Run("lvconvert -y --type thin-pool --poolmetadata %s %s", poolMetadataName, poolName)
+	_, err = RunCommand("lvconvert -y --type thin-pool --poolmetadata %s %s", poolMetadataName, poolName)
 	if err != nil {
 		return err
 	}
@@ -312,8 +310,7 @@ func MakeThinPool(poolMetadata, pool interface{}) error {
 }
 
 func (l *Lv) Rename(newName string) error {
-	lvm := NewLvm()
-	newLv, err := lvm.Lvrename(l.Name, newName, l.VgName)
+	newLv, err := Lvrename(l.Name, newName, l.VgName)
 	if err != nil {
 		return err
 	}
@@ -323,6 +320,5 @@ func (l *Lv) Rename(newName string) error {
 }
 
 func (l *Lv) Remove() error {
-	lvm := NewLvm()
-	return lvm.Lvremove(l)
+	return Lvremove(l)
 }

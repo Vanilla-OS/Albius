@@ -133,7 +133,7 @@ Some system dependencies are required for building Albius:
 - `libbtrfs-dev`
 - `libdevmapper-dev`
 - `libgpgme-dev`
-- `liblvm2-dev`
+- `lvm2`
 - A C compiler supported by CGo (`gcc`, for example)
 
 After the packages listed above have been installed, all that's left to do is

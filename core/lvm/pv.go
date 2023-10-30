@@ -41,8 +41,7 @@ func parsePvAttrs(attrStr string) (int, error) {
 }
 
 func FindPv(path string) (Pv, error) {
-	lvm := NewLvm()
-	pvs, err := lvm.Pvs(path)
+	pvs, err := Pvs(path)
 	if err != nil {
 		return Pv{}, fmt.Errorf("findPv: %v", err)
 	}
@@ -51,8 +50,7 @@ func FindPv(path string) (Pv, error) {
 }
 
 func (p *Pv) Remove() error {
-	lvm := NewLvm()
-	return lvm.Pvremove(p)
+	return Pvremove(p)
 }
 
 func (p *Pv) IsMissing() bool {

@@ -1,16 +1,11 @@
 package lvm
 
-// #cgo LDFLAGS: -llvm2cmd
-/*
-#include "lvm_cgo.h"
-*/
-import "C"
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"strconv"
 	"strings"
-	"unsafe"
 )
 
 // LVM command return codes
@@ -22,54 +17,21 @@ const (
 	ECMD_FAILED       = iota + 1
 )
 
-type Lvm struct {
-	_instance unsafe.Pointer
-}
+func RunCommand(command string, args ...interface{}) (string, error) {
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(command, args...))
+	out, err := cmd.Output()
 
-func (l *Lvm) lvm2Run(command string, args ...interface{}) (string, error) {
-	cmd := C.CString(fmt.Sprintf(command, args...))
-	defer C.free(unsafe.Pointer(cmd))
-
-	ret := C.lvm2_run(l._instance, cmd)
-	if ret != ECMD_PROCESSED {
-		return "", fmt.Errorf("command returned exit status %d", ret)
+	exitErr, ok := err.(*exec.ExitError)
+	if err != nil && ok {
+		return strings.TrimSpace(string(out)), fmt.Errorf("lvm.RunCommand: \n%s", string(exitErr.Stderr))
 	}
 
-	output := ""
-	for {
-		logger := C.logger()
-		if C.lvm_log_empty(logger) == 1 {
-			break
-		}
-		entry := C.lvm_log_remove(&logger)
-		C.set_logger(logger)
-		entryStr := C.GoString((*C.char)(entry))
-		C.free(entry)
-		output += entryStr + "\n"
-	}
-
-	return output, nil
-}
-
-func NewLvm() Lvm {
-	C.lvm2_log_fn((*[0]byte)(C.lvm_log_capture_fn))
-	C.init_logger()
-
-	instance := Lvm{
-		C.lvm2_init(),
-	}
-
-	return instance
-}
-
-func (l *Lvm) Dispose() {
-	C.free(unsafe.Pointer(C.logger()))
-	C.lvm2_exit(l._instance)
+	return strings.TrimSpace(string(out)), err
 }
 
 // pvcreate (create pv)
-func (l *Lvm) Pvcreate(diskLabel string) error {
-	_, err := l.lvm2Run("pvcreate -y %s", diskLabel)
+func Pvcreate(diskLabel string) error {
+	_, err := RunCommand("pvcreate -y %s", diskLabel)
 	if err != nil {
 		return fmt.Errorf("pvcreate: %v", err)
 	}
@@ -78,13 +40,13 @@ func (l *Lvm) Pvcreate(diskLabel string) error {
 }
 
 // pvs (list pvs)
-func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
+func Pvs(filter ...string) ([]Pv, error) {
 	filterStr := ""
 	if len(filter) > 0 {
 		filterStr = strings.Join(filter, " ")
 	}
 
-	output, err := l.lvm2Run("pvs --noheadings --units m --nosuffix --separator , %s", filterStr)
+	output, err := RunCommand("pvs --noheadings --units m --nosuffix --separator , %s", filterStr)
 	if err != nil {
 		return []Pv{}, fmt.Errorf("pvs: %v", err)
 	}
@@ -124,7 +86,7 @@ func (l *Lvm) Pvs(filter ...string) ([]Pv, error) {
 }
 
 // pvresize (resize pv)
-func (l *Lvm) Pvresize(pv interface{}, setPvSize ...float64) error {
+func Pvresize(pv interface{}, setPvSize ...float64) error {
 	pvPaths, err := extractPathsFromPvs(pv)
 	if err != nil {
 		return fmt.Errorf("pvresize: %v", err)
@@ -135,7 +97,7 @@ func (l *Lvm) Pvresize(pv interface{}, setPvSize ...float64) error {
 		setPvSizeOpt = fmt.Sprintf("--setphysicalvolumesize %fm", setPvSize[0])
 	}
 
-	_, err = l.lvm2Run("pvresize -y %s %s", setPvSizeOpt, pvPaths[0])
+	_, err = RunCommand("pvresize -y %s %s", setPvSizeOpt, pvPaths[0])
 	if err != nil {
 		return fmt.Errorf("pvresize: %v", err)
 	}
@@ -147,13 +109,13 @@ func (l *Lvm) Pvresize(pv interface{}, setPvSize ...float64) error {
 // TODO
 
 // pvremove (make partition stop being a pv)
-func (l *Lvm) Pvremove(pv interface{}) error {
+func Pvremove(pv interface{}) error {
 	pvPaths, err := extractPathsFromPvs(pv)
 	if err != nil {
 		return fmt.Errorf("pvremove: %v", err)
 	}
 
-	_, err = l.lvm2Run("pvremove -y %s", pvPaths[0])
+	_, err = RunCommand("pvremove -y %s", pvPaths[0])
 	if err != nil {
 		return fmt.Errorf("pvremove: %v", err)
 	}
@@ -162,13 +124,13 @@ func (l *Lvm) Pvremove(pv interface{}) error {
 }
 
 // vgcreate (create vg)
-func (l *Lvm) Vgcreate(name string, pvs ...interface{}) error {
+func Vgcreate(name string, pvs ...interface{}) error {
 	pvPaths, err := extractPathsFromPvs(pvs...)
 	if err != nil {
 		return fmt.Errorf("vgcreate: %v", err)
 	}
 
-	_, err = l.lvm2Run("vgcreate %s %s", name, strings.Join(pvPaths, " "))
+	_, err = RunCommand("vgcreate %s %s", name, strings.Join(pvPaths, " "))
 	if err != nil {
 		return fmt.Errorf("vgcreate: %v", err)
 	}
@@ -177,13 +139,13 @@ func (l *Lvm) Vgcreate(name string, pvs ...interface{}) error {
 }
 
 // vgs (list vgs)
-func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
+func Vgs(filter ...string) ([]Vg, error) {
 	filterStr := ""
 	if len(filter) > 0 {
 		filterStr = strings.Join(filter, " ")
 	}
 
-	output, err := l.lvm2Run("vgs --noheadings --units m --nosuffix --separator , %s", filterStr)
+	output, err := RunCommand("vgs --noheadings --units m --nosuffix --separator , %s", filterStr)
 	if err != nil {
 		return []Vg{}, fmt.Errorf("vgs: %v", err)
 	}
@@ -210,7 +172,7 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 		}
 
 		// Filter Pvs matching Vg
-		pvs, err := l.Pvs()
+		pvs, err := Pvs()
 		if err != nil {
 			return []Vg{}, fmt.Errorf("vgs: could not get list of pvs: %v", err)
 		}
@@ -222,7 +184,7 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 		}
 
 		// Filter LVs matching Vg
-		lvs, err := l.Lvs()
+		lvs, err := Lvs()
 		if err != nil {
 			return []Vg{}, fmt.Errorf("vgs: could not get list of lvs: %v", err)
 		}
@@ -247,13 +209,13 @@ func (l *Lvm) Vgs(filter ...string) ([]Vg, error) {
 }
 
 // vgrename (rename vg)
-func (l *Lvm) Vgrename(oldName, newName string) (Vg, error) {
-	_, err := l.lvm2Run("vgrename %s %s", oldName, newName)
+func Vgrename(oldName, newName string) (Vg, error) {
+	_, err := RunCommand("vgrename %s %s", oldName, newName)
 	if err != nil {
 		return Vg{}, fmt.Errorf("vgrename: %v", err)
 	}
 
-	newVg, err := l.Vgs(newName)
+	newVg, err := Vgs(newName)
 	if err != nil {
 		return Vg{}, fmt.Errorf("vgrename: %v", err)
 	}
@@ -262,7 +224,7 @@ func (l *Lvm) Vgrename(oldName, newName string) (Vg, error) {
 }
 
 // vgextend (add pv to vg)
-func (l *Lvm) Vgextend(vg interface{}, pvs ...interface{}) error {
+func Vgextend(vg interface{}, pvs ...interface{}) error {
 	if len(pvs) == 0 {
 		return errors.New("vgextend: No PVs were provided")
 	}
@@ -276,7 +238,7 @@ func (l *Lvm) Vgextend(vg interface{}, pvs ...interface{}) error {
 		return fmt.Errorf("vgextend: %v", err)
 	}
 
-	_, err = l.lvm2Run("vgextend %s %s", vgName, strings.Join(pvPaths, " "))
+	_, err = RunCommand("vgextend %s %s", vgName, strings.Join(pvPaths, " "))
 	if err != nil {
 		return fmt.Errorf("vgextend: %v", err)
 	}
@@ -285,7 +247,7 @@ func (l *Lvm) Vgextend(vg interface{}, pvs ...interface{}) error {
 }
 
 // vgreduce (remove pv from vg)
-func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
+func Vgreduce(vg interface{}, pvs ...interface{}) error {
 	if len(pvs) == 0 {
 		return errors.New("vgreduce: No PVs were provided")
 	}
@@ -299,7 +261,7 @@ func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
 		return fmt.Errorf("vgreduce: %v", err)
 	}
 
-	_, err = l.lvm2Run("vgreduce %s %s", vgName, strings.Join(pvPaths, " "))
+	_, err = RunCommand("vgreduce %s %s", vgName, strings.Join(pvPaths, " "))
 	if err != nil {
 		return fmt.Errorf("vgreduce: %v", err)
 	}
@@ -308,13 +270,13 @@ func (l *Lvm) Vgreduce(vg interface{}, pvs ...interface{}) error {
 }
 
 // vgremove (remove vg)
-func (l *Lvm) Vgremove(vg interface{}) error {
+func Vgremove(vg interface{}) error {
 	vgName, err := extractNameFromVg(vg)
 	if err != nil {
 		return fmt.Errorf("vgremove: %v", err)
 	}
 
-	_, err = l.lvm2Run("vgremove -y %s", vgName)
+	_, err = RunCommand("vgremove -y %s", vgName)
 	if err != nil {
 		return fmt.Errorf("vgremove: %v", err)
 	}
@@ -323,13 +285,13 @@ func (l *Lvm) Vgremove(vg interface{}) error {
 }
 
 // lvcreate (create lv)
-func (l *Lvm) Lvcreate(name string, vg interface{}, lvType LVType, size float64) error {
+func Lvcreate(name string, vg interface{}, lvType LVType, size float64) error {
 	vgName, err := extractNameFromVg(vg)
 	if err != nil {
 		return fmt.Errorf("lvcreate: %v", err)
 	}
 
-	_, err = l.lvm2Run("lvcreate -y --type %s -L %.2fm %s -n %s", lvType, size, vgName, name)
+	_, err = RunCommand("lvcreate -y --type %s -L %.2fm %s -n %s", lvType, size, vgName, name)
 	if err != nil {
 		return fmt.Errorf("lvcreate: %v", err)
 	}
@@ -337,7 +299,7 @@ func (l *Lvm) Lvcreate(name string, vg interface{}, lvType LVType, size float64)
 	return nil
 }
 
-func (l *Lvm) LvThinCreate(name string, vg, pool interface{}, size float64) error {
+func LvThinCreate(name string, vg, pool interface{}, size float64) error {
 	vgName, err := extractNameFromVg(vg)
 	if err != nil {
 		return fmt.Errorf("lvmThinCreate: %v", err)
@@ -348,7 +310,7 @@ func (l *Lvm) LvThinCreate(name string, vg, pool interface{}, size float64) erro
 		return fmt.Errorf("lvmThinCreate: %v", err)
 	}
 
-	_, err = l.lvm2Run("lvcreate -y -n %s -V %.2fm --thinpool %s %s", name, size, poolName, vgName)
+	_, err = RunCommand("lvcreate -y -n %s -V %.2fm --thinpool %s %s", name, size, poolName, vgName)
 	if err != nil {
 		return fmt.Errorf("lvmThinCreate: %v", err)
 	}
@@ -357,13 +319,13 @@ func (l *Lvm) LvThinCreate(name string, vg, pool interface{}, size float64) erro
 }
 
 // lvs (list lvs)
-func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
+func Lvs(filter ...string) ([]Lv, error) {
 	filterStr := ""
 	if len(filter) > 0 {
 		filterStr = strings.Join(filter, " ")
 	}
 
-	output, err := l.lvm2Run("lvs --noheadings --units m --nosuffix --separator , %s", filterStr)
+	output, err := RunCommand("lvs --noheadings --units m --nosuffix --separator , %s", filterStr)
 	if err != nil {
 		return []Lv{}, fmt.Errorf("lvs: %v", err)
 	}
@@ -408,18 +370,18 @@ func (l *Lvm) Lvs(filter ...string) ([]Lv, error) {
 }
 
 // lvrename (rename lv)
-func (l *Lvm) Lvrename(oldName, newName string, vg interface{}) (Lv, error) {
+func Lvrename(oldName, newName string, vg interface{}) (Lv, error) {
 	vgName, err := extractNameFromVg(vg)
 	if err != nil {
 		return Lv{}, fmt.Errorf("lvrename: %v", err)
 	}
 
-	_, err = l.lvm2Run("lvrename %s %s %s", vgName, oldName, newName)
+	_, err = RunCommand("lvrename %s %s %s", vgName, oldName, newName)
 	if err != nil {
 		return Lv{}, fmt.Errorf("lvrename: %v", err)
 	}
 
-	newLv, err := l.Lvs(vgName + "/" + newName)
+	newLv, err := Lvs(vgName + "/" + newName)
 	if err != nil {
 		return Lv{}, fmt.Errorf("lvrename: %v", err)
 	}
@@ -429,20 +391,20 @@ func (l *Lvm) Lvrename(oldName, newName string, vg interface{}) (Lv, error) {
 
 // lvresize (resize lv and fs)
 // TODO: Need to implement a function to resize filesystems first
-// func (l *Lvm) Lvresize(lv interface{}, mode LVResizeMode, sizeOffset float64) error {
+// func  Lvresize(lv interface{}, mode LVResizeMode, sizeOffset float64) error {
 // 	return nil
 // }
 
 // lvremove (remove lv)
-func (l *Lvm) Lvremove(lv interface{}) error {
+func Lvremove(lv interface{}) error {
 	lvName, err := extractNameFromLv(lv)
 	if err != nil {
 		return fmt.Errorf("lvremove: %v", err)
 	}
 
-	_, err = l.lvm2Run("lvremove -y %s", lvName)
+	_, err = RunCommand("lvremove -y %s", lvName)
 	if err != nil {
-		return fmt.Errorf("lvrename: %v", err)
+		return fmt.Errorf("lvremove: %v", err)
 	}
 
 	return nil

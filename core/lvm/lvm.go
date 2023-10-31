@@ -295,16 +295,16 @@ func Lvcreate(name string, vg interface{}, lvType LVType, size interface{}) erro
 	sizeStr := ""
 	switch sizeVar := size.(type) {
 	case string:
-		sizeStr = sizeVar
+		sizeStr = "-l" + sizeVar
 	case float64:
-		sizeStr = fmt.Sprintf("%.2fm", sizeVar)
+		sizeStr = fmt.Sprintf("-L %.2fm", sizeVar)
 	case int:
-		sizeStr = fmt.Sprintf("%dm", sizeVar)
+		sizeStr = fmt.Sprintf("-L %dm", sizeVar)
 	default:
 		return fmt.Errorf("lvcreate: expected either string, int, or float64 for size, got %s", reflect.TypeOf(size))
 	}
 
-	_, err = RunCommand("lvcreate -y --type %s -L %s %s -n %s", lvType, sizeStr, vgName, name)
+	_, err = RunCommand("lvcreate -y --type %s %s %s -n %s", lvType, sizeStr, vgName, name)
 	if err != nil {
 		return fmt.Errorf("lvcreate: %v", err)
 	}

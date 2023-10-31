@@ -507,6 +507,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * **Accepts**:
 	 * - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
 	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 	 */
 	case "lvm-format":
 		name := args[0].(string)
@@ -522,6 +523,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err = MakeFs(&dummyPart)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		if len(args) == 3 {
+			label := args[2].(string)
+			err := dummyPart.SetLabel(label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
 		}
 	/* !! --- */
 	default:

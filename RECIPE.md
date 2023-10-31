@@ -188,6 +188,7 @@ Same as `format`, but formats an LVM logical volume.
 **Accepts**:
 - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
 - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+- *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 
 --- 
 

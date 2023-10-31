@@ -425,13 +425,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *Name* (`string`): Logical volume name.
 	 * - *VG* (`string`): Volume group name.
 	 * - *Type* (`string`): Logical volume type. See lvcreate(8) for available types. If unsure, use `linear`.
-	 * - *Size* (`float`): Logical volume size in MiB.
+	 * - *Size* (`float` or `string`): Logical volume size in MiB or a string containing a relative size (e.g. "100%FREE").
 	 */
 	case "lvcreate":
 		name := args[0].(string)
 		vg := args[1].(string)
 		lvType := args[2].(string)
-		vgSize := args[3].(float64)
+		vgSize := args[3]
 		err := lvm.Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)

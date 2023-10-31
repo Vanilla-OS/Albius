@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -285,13 +286,25 @@ func Vgremove(vg interface{}) error {
 }
 
 // lvcreate (create lv)
-func Lvcreate(name string, vg interface{}, lvType LVType, size float64) error {
+func Lvcreate(name string, vg interface{}, lvType LVType, size interface{}) error {
 	vgName, err := extractNameFromVg(vg)
 	if err != nil {
 		return fmt.Errorf("lvcreate: %v", err)
 	}
 
-	_, err = RunCommand("lvcreate -y --type %s -L %.2fm %s -n %s", lvType, size, vgName, name)
+	sizeStr := ""
+	switch sizeVar := size.(type) {
+	case string:
+		sizeStr = sizeVar
+	case float64:
+		sizeStr = fmt.Sprintf("%.2fm", sizeVar)
+	case int:
+		sizeStr = fmt.Sprintf("%dm", sizeVar)
+	default:
+		return fmt.Errorf("lvcreate: expected either string, int, or float64 for size, got %s", reflect.TypeOf(size))
+	}
+
+	_, err = RunCommand("lvcreate -y --type %s -L %s %s -n %s", lvType, sizeStr, vgName, name)
 	if err != nil {
 		return fmt.Errorf("lvcreate: %v", err)
 	}

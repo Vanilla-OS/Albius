@@ -2,8 +2,6 @@ module github.com/vanilla-os/albius
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/containers/storage v1.50.2
 	github.com/vanilla-os/prometheus v0.1.6

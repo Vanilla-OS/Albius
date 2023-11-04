@@ -76,6 +76,8 @@ func LocateDisk(diskname string) (*Disk, error) {
 		return nil, fmt.Errorf("Failed to list disk: %s", err)
 	}
 
+	fmt.Println(string(output))
+
 	var device *Disk
 	var decoded *LocateDiskOutput
 	err = json.Unmarshal(output, &decoded)

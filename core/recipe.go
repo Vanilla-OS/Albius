@@ -531,6 +531,43 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 		}
+	/* !! ### lvm-luks-format
+	 *
+	 * Same as `luks-format`, but formats an LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Password* (`string`): The password used to encrypt the volume.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
+	 */
+	case "lvm-luks-format":
+		name := args[0].(string)
+		filesystem := args[1].(string)
+		password := args[2].(string)
+		lv, err := lvm.FindLv(name)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		dummyPart := Partition{
+			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
+			Filesystem: PartitionFs(filesystem),
+		}
+		err = LuksFormat(&dummyPart, password)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		err = LUKSMakeFs(&dummyPart)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		if len(args) == 4 {
+			label := args[3].(string)
+			err := dummyPart.SetLabel(label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
+		}
 	/* !! --- */
 	default:
 		return fmt.Errorf("unrecognized operation %s", operation)

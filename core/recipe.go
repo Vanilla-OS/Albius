@@ -566,7 +566,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for uuid == "" {
 			uuid, _ = dummyPart.GetUUID()
 		}
-		err = LUKSMakeFs(&dummyPart)
+		err = MakeFs(&dummyPart)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}

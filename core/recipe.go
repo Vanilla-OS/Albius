@@ -125,10 +125,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			// UUID, so we loop until it gives us one
 			uuid := ""
 			for uuid == "" {
-				uuid, err = part.GetUUID()
-			}
-			if err != nil {
-				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+				uuid, _ = part.GetUUID()
 			}
 			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
@@ -270,6 +267,12 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err = LuksFormat(&part, password)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		// lsblk seems to take a few milliseconds to update the partition's
+		// UUID, so we loop until it gives us one
+		uuid := ""
+		for uuid == "" {
+			uuid, _ = part.GetUUID()
 		}
 		err = LUKSMakeFs(&part)
 		if err != nil {
@@ -556,6 +559,12 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err = LuksFormat(&dummyPart, password)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		// lsblk seems to take a few milliseconds to update the partition's
+		// UUID, so we loop until it gives us one
+		uuid := ""
+		for uuid == "" {
+			uuid, _ = dummyPart.GetUUID()
 		}
 		err = LUKSMakeFs(&dummyPart)
 		if err != nil {

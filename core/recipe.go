@@ -566,13 +566,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for uuid == "" {
 			uuid, _ = dummyPart.GetUUID()
 		}
-		err = MakeFs(&dummyPart)
+		err = LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		err = LUKSMakeFs(&dummyPart)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
-			err := dummyPart.SetLabel(label)
+			err := LUKSSetLabel(&dummyPart, label)
 			if err != nil {
 				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}

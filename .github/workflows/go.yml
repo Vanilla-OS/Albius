@@ -21,11 +21,11 @@ jobs:
 
     - name: Install build dependencies
       run: |
-          apt-get update
-          apt-get install -y build-essential pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 parted
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 parted
 
     - name: Build
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      run: sudo go test -v ./...

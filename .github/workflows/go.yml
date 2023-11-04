@@ -27,7 +27,7 @@ jobs:
     - name: Install build dependencies
       run: |
           apt-get update
-          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 parted udev
+          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 parted
 
     - name: Build
       run: go build -v ./...

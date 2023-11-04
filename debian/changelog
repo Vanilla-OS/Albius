@@ -1,3 +1,9 @@
+albius (0.3.0) unstable; urgency=critical
+
+  * LVM support
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 04 Nov 2023 17:05:00 -0300
+
 albius (0.2.11) unstable; urgency=critical
 
   * Fix: Broken Grub install

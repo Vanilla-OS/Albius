@@ -22,6 +22,7 @@ Architecture: all
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          golang-go,
+         lvm2,
          parted
 Built-Using: ${misc:Built-Using}
 Description: Linux installer backend with support for SquashFS and OCI installations.

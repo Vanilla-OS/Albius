@@ -92,19 +92,6 @@ type lookupGroupEntry struct {
 	user string
 }
 
-func scanWithoutComments(rc *bufio.Scanner) (string, bool) {
-	for {
-		if !rc.Scan() {
-			return "", false
-		}
-		line := rc.Text()
-		if strings.HasPrefix(strings.TrimSpace(line), "#") {
-			continue
-		}
-		return line, true
-	}
-}
-
 func parseNextPasswd(rc *bufio.Scanner) *lookupPasswdEntry {
 	if !rc.Scan() {
 		return nil
@@ -131,13 +118,10 @@ func parseNextPasswd(rc *bufio.Scanner) *lookupPasswdEntry {
 }
 
 func parseNextGroup(rc *bufio.Scanner) *lookupGroupEntry {
-	// On FreeBSD, /etc/group may contain comments:
-	//   https://man.freebsd.org/cgi/man.cgi?query=group&sektion=5&format=html
-	// We need to ignore those lines rather than trying to parse them.
-	line, ok := scanWithoutComments(rc)
-	if !ok {
+	if !rc.Scan() {
 		return nil
 	}
+	line := rc.Text()
 	fields := strings.Split(line, ":")
 	if len(fields) != 4 {
 		return nil

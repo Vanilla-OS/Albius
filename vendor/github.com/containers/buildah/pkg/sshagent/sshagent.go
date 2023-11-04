@@ -201,13 +201,8 @@ func NewSource(paths []string) (*Source, error) {
 	if len(paths) == 0 {
 		socket = os.Getenv("SSH_AUTH_SOCK")
 		if socket == "" {
-			return nil, errors.New("SSH_AUTH_SOCK not set in environment")
+			return nil, errors.New("$SSH_AUTH_SOCK not set")
 		}
-		absSocket, err := filepath.Abs(socket)
-		if err != nil {
-			return nil, fmt.Errorf("evaluating SSH_AUTH_SOCK in environment: %w", err)
-		}
-		socket = absSocket
 	}
 	for _, p := range paths {
 		if socket != "" {

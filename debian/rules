@@ -4,3 +4,5 @@ export DH_GOPKG := github.com/vanilla-os/albius
 
 %:
 	dh $@ --buildsystem=golang --with=golang
+
+override_dh_auto_test:

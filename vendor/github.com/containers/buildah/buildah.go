@@ -349,10 +349,10 @@ type BuilderOptions struct {
 	ProcessLabel string
 	// MountLabel is the SELinux mount label associated with the container
 	MountLabel string
-	// PreserveBaseImageAnns indicates that we should preserve base
-	// image information (Annotations) that are present in our base image,
-	// rather than overwriting them with information about the base image
-	// itself. Useful as an internal implementation detail of multistage
+	// PreserveBaseImageAnn[otation]s indicates that we should preserve base
+	// image information that was present in our base image, instead of
+	// overwriting them with information about the base image itself.  This
+	// is mainly useful as an internal implementation detail of multistage
 	// builds, and does not need to be set by most callers.
 	PreserveBaseImageAnns bool
 }
@@ -385,11 +385,6 @@ type ImportFromImageOptions struct {
 	// that don't include a domain portion.
 	SystemContext *types.SystemContext
 }
-
-// ConfidentialWorkloadOptions encapsulates options which control whether or not
-// we output an image whose rootfs contains a LUKS-compatibly-encrypted disk image
-// instead of the usual rootfs contents.
-type ConfidentialWorkloadOptions = define.ConfidentialWorkloadOptions
 
 // NewBuilder creates a new build container.
 func NewBuilder(ctx context.Context, store storage.Store, options BuilderOptions) (*Builder, error) {
@@ -438,9 +433,6 @@ func OpenBuilder(store storage.Store, container string) (*Builder, error) {
 	b.store = store
 	b.fixupConfig(nil)
 	b.setupLogger()
-	if b.CommonBuildOpts == nil {
-		b.CommonBuildOpts = &CommonBuildOptions{}
-	}
 	return b, nil
 }
 
@@ -477,9 +469,6 @@ func OpenBuilderByPath(store storage.Store, path string) (*Builder, error) {
 			b.store = store
 			b.fixupConfig(nil)
 			b.setupLogger()
-			if b.CommonBuildOpts == nil {
-				b.CommonBuildOpts = &CommonBuildOptions{}
-			}
 			return b, nil
 		}
 		if err != nil {
@@ -517,9 +506,6 @@ func OpenAllBuilders(store storage.Store) (builders []*Builder, err error) {
 			b.store = store
 			b.setupLogger()
 			b.fixupConfig(nil)
-			if b.CommonBuildOpts == nil {
-				b.CommonBuildOpts = &CommonBuildOptions{}
-			}
 			builders = append(builders, b)
 			continue
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/containers/image/v5/types"
 	"github.com/containers/storage/pkg/lockfile"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	spec "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -198,8 +199,8 @@ type runMountInfo struct {
 
 // IDMaps are the UIDs, GID, and maps for the run
 type IDMaps struct {
-	uidmap     []specs.LinuxIDMapping
-	gidmap     []specs.LinuxIDMapping
+	uidmap     []spec.LinuxIDMapping
+	gidmap     []spec.LinuxIDMapping
 	rootUID    int
 	rootGID    int
 	processUID int

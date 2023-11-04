@@ -16,11 +16,8 @@ import (
 
 	"github.com/containerd/containerd/platforms"
 	"github.com/containers/buildah/define"
-	mkcwtypes "github.com/containers/buildah/internal/mkcw/types"
 	internalParse "github.com/containers/buildah/internal/parse"
-	"github.com/containers/buildah/internal/tmpdir"
 	"github.com/containers/buildah/pkg/sshagent"
-	"github.com/containers/common/pkg/auth"
 	"github.com/containers/common/pkg/config"
 	"github.com/containers/common/pkg/parse"
 	"github.com/containers/image/v5/docker/reference"
@@ -68,6 +65,11 @@ func RepoNamesToNamedReferences(destList []string) ([]reference.Named, error) {
 		result = append(result, named)
 	}
 	return result, nil
+}
+
+// CleanCacheMount gets the cache parent created by `--mount=type=cache` and removes it.
+func CleanCacheMount() error {
+	return internalParse.CleanCacheMount()
 }
 
 // CommonBuildOptions parses the build options from the bud cli
@@ -152,6 +154,9 @@ func CommonBuildOptionsFromFlagSet(flags *pflag.FlagSet, findFlagFunc func(name 
 		return nil, fmt.Errorf("invalid --shm-size: %w", err)
 	}
 	volumes, _ := flags.GetStringArray("volume")
+	if err := Volumes(volumes); err != nil {
+		return nil, err
+	}
 	cpuPeriod, _ := flags.GetUint64("cpu-period")
 	cpuQuota, _ := flags.GetInt64("cpu-quota")
 	cpuShares, _ := flags.GetUint64("cpu-shares")
@@ -446,13 +451,9 @@ func SystemContextFromFlagSet(flags *pflag.FlagSet, findFlagFunc func(name strin
 
 func getAuthFile(authfile string) string {
 	if authfile != "" {
-		absAuthfile, err := filepath.Abs(authfile)
-		if err == nil {
-			return absAuthfile
-		}
-		logrus.Warnf("ignoring passed-in auth file path, evaluating it: %v", err)
+		return authfile
 	}
-	return auth.GetDefaultAuthFile()
+	return os.Getenv("REGISTRY_AUTH_FILE")
 }
 
 // PlatformFromOptions parses the operating system (os) and architecture (arch)
@@ -509,6 +510,8 @@ func PlatformsFromOptions(c *cobra.Command) (platforms []struct{ OS, Arch, Varia
 	return platforms, nil
 }
 
+const platformSep = "/"
+
 // DefaultPlatform returns the standard platform for the current system
 func DefaultPlatform() string {
 	return platforms.DefaultString()
@@ -517,19 +520,21 @@ func DefaultPlatform() string {
 // Platform separates the platform string into os, arch and variant,
 // accepting any of $arch, $os/$arch, or $os/$arch/$variant.
 func Platform(platform string) (os, arch, variant string, err error) {
-	if platform == "local" || platform == "" || platform == "/" {
-		return Platform(DefaultPlatform())
+	split := strings.Split(platform, platformSep)
+	switch len(split) {
+	case 3:
+		variant = split[2]
+		fallthrough
+	case 2:
+		arch = split[1]
+		os = split[0]
+		return
+	case 1:
+		if platform == "local" {
+			return Platform(DefaultPlatform())
+		}
 	}
-	if platform[len(platform)-1] == '/' || platform[0] == '/' {
-		// If --platform string has format as `some/plat/string/`
-		// or `/some/plat/string` make it `some/plat/string`
-		platform = strings.Trim(platform, "/")
-	}
-	platformSpec, err := platforms.Parse(platform)
-	if err != nil {
-		return "", "", "", fmt.Errorf("invalid platform syntax for --platform=%q: %w", platform, err)
-	}
-	return platformSpec.OS, platformSpec.Architecture, platformSpec.Variant, nil
+	return "", "", "", fmt.Errorf("invalid platform syntax for %q (use OS/ARCH[/VARIANT][,...])", platform)
 }
 
 func parseCreds(creds string) (string, string) {
@@ -634,76 +639,6 @@ func GetBuildOutput(buildOutput string) (define.BuildOutputOption, error) {
 	}
 
 	return define.BuildOutputOption{Path: path, IsDir: isDir, IsStdout: isStdout}, nil
-}
-
-// GetConfidentialWorkloadOptions parses a confidential workload settings
-// argument, which controls both whether or not we produce an image that
-// expects to be run using krun, and how we handle things like encrypting
-// the disk image that the container image will contain.
-func GetConfidentialWorkloadOptions(arg string) (define.ConfidentialWorkloadOptions, error) {
-	options := define.ConfidentialWorkloadOptions{
-		TempDir: GetTempDir(),
-	}
-	defaults := options
-	for _, option := range strings.Split(arg, ",") {
-		var err error
-		switch {
-		case strings.HasPrefix(option, "type="):
-			options.TeeType = define.TeeType(strings.ToLower(strings.TrimPrefix(option, "type=")))
-			switch options.TeeType {
-			case define.SEV, define.SNP, mkcwtypes.SEV_NO_ES:
-			default:
-				return options, fmt.Errorf("parsing type= value %q: unrecognized value", options.TeeType)
-			}
-		case strings.HasPrefix(option, "attestation_url="), strings.HasPrefix(option, "attestation-url="):
-			options.Convert = true
-			options.AttestationURL = strings.TrimPrefix(option, "attestation_url=")
-			if options.AttestationURL == option {
-				options.AttestationURL = strings.TrimPrefix(option, "attestation-url=")
-			}
-		case strings.HasPrefix(option, "passphrase="), strings.HasPrefix(option, "passphrase="):
-			options.Convert = true
-			options.DiskEncryptionPassphrase = strings.TrimPrefix(option, "passphrase=")
-		case strings.HasPrefix(option, "workload_id="), strings.HasPrefix(option, "workload-id="):
-			options.WorkloadID = strings.TrimPrefix(option, "workload_id=")
-			if options.WorkloadID == option {
-				options.WorkloadID = strings.TrimPrefix(option, "workload-id=")
-			}
-		case strings.HasPrefix(option, "cpus="):
-			options.CPUs, err = strconv.Atoi(strings.TrimPrefix(option, "cpus="))
-			if err != nil {
-				return options, fmt.Errorf("parsing cpus= value %q: %w", strings.TrimPrefix(option, "cpus="), err)
-			}
-		case strings.HasPrefix(option, "memory="):
-			options.Memory, err = strconv.Atoi(strings.TrimPrefix(option, "memory="))
-			if err != nil {
-				return options, fmt.Errorf("parsing memory= value %q: %w", strings.TrimPrefix(option, "memorys"), err)
-			}
-		case option == "ignore_attestation_errors", option == "ignore-attestation-errors":
-			options.IgnoreAttestationErrors = true
-		case strings.HasPrefix(option, "ignore_attestation_errors="), strings.HasPrefix(option, "ignore-attestation-errors="):
-			val := strings.TrimPrefix(option, "ignore_attestation_errors=")
-			if val == option {
-				val = strings.TrimPrefix(option, "ignore-attestation-errors=")
-			}
-			options.IgnoreAttestationErrors = val == "true" || val == "yes" || val == "on" || val == "1"
-		case strings.HasPrefix(option, "firmware-library="), strings.HasPrefix(option, "firmware_library="):
-			val := strings.TrimPrefix(option, "firmware-library=")
-			if val == option {
-				val = strings.TrimPrefix(option, "firmware_library=")
-			}
-			options.FirmwareLibrary = val
-		case strings.HasPrefix(option, "slop="):
-			options.Slop = strings.TrimPrefix(option, "slop=")
-		default:
-			knownOptions := []string{"type", "attestation_url", "passphrase", "workload_id", "cpus", "memory", "firmware_library", "slop"}
-			return options, fmt.Errorf("expected one or more of %q as arguments for --cw, not %q", knownOptions, option)
-		}
-	}
-	if options != defaults && !options.Convert {
-		return options, fmt.Errorf("--cw arguments missing one or more of (%q, %q)", "passphrase", "attestation_url")
-	}
-	return options, nil
 }
 
 // IDMappingOptions parses the build options related to user namespaces and ID mapping.
@@ -1068,7 +1003,10 @@ func isValidDeviceMode(mode string) bool {
 }
 
 func GetTempDir() string {
-	return tmpdir.GetTempDir()
+	if tmpdir, ok := os.LookupEnv("TMPDIR"); ok {
+		return tmpdir
+	}
+	return "/var/tmp"
 }
 
 // Secrets parses the --secret flag

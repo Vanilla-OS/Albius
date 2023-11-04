@@ -13,8 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const seccompAvailable = true
-
 // setSeccomp sets the seccomp filter for ourselves and any processes that we'll start.
 func setSeccomp(spec *specs.Spec) error {
 	logrus.Debugf("setting seccomp configuration")
@@ -81,11 +79,9 @@ func setSeccomp(spec *specs.Spec) error {
 		case specs.ArchS390X:
 			return libseccomp.ArchS390X
 		case specs.ArchPARISC:
-			return libseccomp.ArchPARISC
+			/* fallthrough */ /* for now */
 		case specs.ArchPARISC64:
-			return libseccomp.ArchPARISC64
-		case specs.ArchRISCV64:
-			return libseccomp.ArchRISCV64
+			/* fallthrough */ /* for now */
 		default:
 			logrus.Errorf("unmappable arch %v", specArch)
 		}

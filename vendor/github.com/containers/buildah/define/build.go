@@ -163,10 +163,6 @@ type BuildOptions struct {
 	// It allows end user to export recently built rootfs into a directory or tar.
 	// See the documentation of 'buildah build --output' for the details of the format.
 	BuildOutput string
-	// ConfidentialWorkload controls whether or not, and if so, how, we produce an
-	// image that's meant to be run using krun as a VM instead of a conventional
-	// process-type container.
-	ConfidentialWorkload ConfidentialWorkloadOptions
 	// Additional tags to add to the image that we write, if we know of a
 	// way to add them.
 	AdditionalTags []string
@@ -248,8 +244,6 @@ type BuildOptions struct {
 	Squash bool
 	// Labels metadata for an image
 	Labels []string
-	// LayerLabels metadata for an intermediate image
-	LayerLabels []string
 	// Annotation metadata for an image
 	Annotations []string
 	// OnBuild commands to be run by images based on this image

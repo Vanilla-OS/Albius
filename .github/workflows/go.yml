@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/vanilla-os/pico:main
-      options: --user root
+      options: --privileged --user root
       volumes:
       - /dev:/dev
 

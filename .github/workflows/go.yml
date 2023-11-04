@@ -36,9 +36,10 @@ jobs:
     - name: Install test dependencies
       run: |
         curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
-        sudo ./utils/create_test_env.sh
+        ./utils/create_test_env.sh
 
     - name: Test
       run: |
         distrobox enter -r albius_test
+        go build -v ./...
         go test -v ./...

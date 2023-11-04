@@ -31,16 +31,16 @@ func TestMain(m *testing.M) {
 	device = string(ret)
 	device = device[:len(device)-1]
 
-	// Test: Show all devices
-	out, err := exec.Command("lsblk", "-f").Output()
-	if err != nil {
-		panic("error listing block devices: " + err.Error())
-	}
-	fmt.Println(string(out))
-
 	// Create device label and add some partitions
 	albiusDevice, err := LocateDisk(device)
 	if err != nil {
+		// Test: Show all devices
+		out, err := exec.Command("lsblk", "-f").Output()
+		if err != nil {
+			panic("error listing block devices: " + err.Error())
+		}
+		fmt.Println(string(out))
+
 		panic("error finding loop device: " + err.Error())
 	}
 	err = albiusDevice.LabelDisk(GPT)

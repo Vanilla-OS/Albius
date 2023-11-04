@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/vanilla-os/albius/core/lvm"
 )
 
 const (
@@ -55,36 +56,13 @@ type PostStep struct {
 func ReadRecipe(path string) (*Recipe, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read recipe: %s", err)
+		return nil, fmt.Errorf("failed to read recipe: %s", err)
 	}
 
 	var recipe Recipe
-	dec := json.NewDecoder(strings.NewReader(string(content)))
-	dec.DisallowUnknownFields()
-	dec.UseNumber()
-	err = dec.Decode(&recipe)
+	err = json.Unmarshal(content, &recipe)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read recipe: %s", err)
-	}
-
-	// Convert json.Number to int64
-	for i := 0; i < len(recipe.Setup); i++ {
-		step := &recipe.Setup[i]
-		formattedParams := []interface{}{}
-		for _, param := range step.Params {
-			var dummy json.Number
-			dummy = "1"
-			if reflect.TypeOf(param) == reflect.TypeOf(dummy) {
-				convertedParam, err := param.(json.Number).Int64()
-				if err != nil {
-					return nil, fmt.Errorf("Failed to convert recipe parameter: %s", err)
-				}
-				formattedParams = append(formattedParams, convertedParam)
-			} else {
-				formattedParams = append(formattedParams, param)
-			}
-		}
-		step.Params = formattedParams
+		return nil, fmt.Errorf("failed to read recipe: %s", err)
 	}
 
 	return &recipe, nil
@@ -109,7 +87,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		label := DiskLabel(args[0].(string))
 		err = disk.LabelDisk(label)
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### mkpart
 	 *
@@ -131,17 +109,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "mkpart":
 		name := args[0].(string)
 		fsType := PartitionFs(args[1].(string))
-		start := args[2].(int64)
-		end := args[3].(int64)
+		start := int(args[2].(float64))
+		end := int(args[3].(float64))
 		if len(args) > 4 && strings.HasPrefix(string(fsType), "luks-") {
 			luksPassword := args[4].(string)
 			part, err := disk.NewPartition(name, "", start, end)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 			err = LuksFormat(part, luksPassword)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 			// lsblk seems to take a few milliseconds to update the partition's
 			// UUID, so we loop until it gives us one
@@ -150,25 +128,25 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 				uuid, err = part.GetUUID()
 			}
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
 			err = LUKSMakeFs(part)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 			err = LUKSSetLabel(part, name)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 		} else {
 			_, err := disk.NewPartition(name, fsType, start, end)
 			if err != nil {
-				return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}
 		}
 	/* !! ### rm
@@ -181,11 +159,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "rm":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = disk.Partitions[partNum-1].RemovePartition()
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### resizepart
 	 *
@@ -198,15 +176,15 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "resizepart":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		partNewSize, err := strconv.Atoi(args[1].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = disk.Partitions[partNum-1].ResizePartition(partNewSize)
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### namepart
 	 *
@@ -219,19 +197,19 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "namepart":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		partNewName := args[1].(string)
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = disk.Partitions[partNum-1].SetLabel(partNewName)
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = disk.Partitions[partNum-1].NamePartition(partNewName)
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### setflag
 	 *
@@ -246,11 +224,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "setflag":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = disk.Partitions[partNum-1].SetPartitionFlag(args[1].(string), args[2].(bool))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### format
 	 *
@@ -263,13 +241,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "format":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		filesystem := args[1].(string)
 		disk.Partitions[partNum-1].Filesystem = PartitionFs(filesystem)
 		err = MakeFs(&disk.Partitions[partNum-1])
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 	/* !! ### luks-format
 	 *
@@ -283,7 +261,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "luks-format":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return fmt.Errorf("Failed to execute operation %s: %s", operation, err)
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		filesystem := args[1].(string)
 		password := args[2].(string)
@@ -291,15 +269,271 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part.Filesystem = PartitionFs(filesystem)
 		err = LuksFormat(&part, password)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
 		err = LUKSMakeFs(&part)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### pvcreate
+	 *
+	 * Creates a new LVM physical volume from a partition.
+	 *
+	 * **Accepts**:
+	 * - *Partition* (`string`): The partition to use as PV.
+	 */
+	case "pvcreate":
+		part := args[0].(string)
+		err := lvm.Pvcreate(part)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### pvresize
+	 *
+	 * Resizes an LVM physical volume.
+	 *
+	 * **Accepts**:
+	 * - *PV* (`string`): The physical volume path.
+	 * - *Size* (optional `float`): The PV's desired size in MiB. If not provided, the PV will expand to the size of the underlying partition.
+	 */
+	case "pvresize":
+		part := args[0].(string)
+		var err error
+		if len(args) > 1 {
+			size := args[1].(float64)
+			err = lvm.Pvresize(part, size)
+		} else {
+			err = lvm.Pvresize(part)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### pvremove
+	 *
+	 * Remove LVM labels from a partition.
+	 *
+	 * **Accepts**:
+	 * - *PV* (`string`): The physical volume path.
+	 */
+	case "pvremove":
+		part := args[0].(string)
+		err := lvm.Pvremove(part)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### vgcreate
+	 *
+	 * Creates a new LVM volume group.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The VG name.
+	 * - *PVs* (optional `[string]`): List containing paths for PVs to add to the newly created VG.
+	 */
+	case "vgcreate":
+		name := args[0].(string)
+		pvs := []string{}
+		if len(args) > 1 {
+			for _, pv := range args[1].([]interface{}) {
+				pvs = append(pvs, pv.(string))
+			}
+		}
+		pvList := make([]interface{}, len(pvs))
+		for i, p := range pvs {
+			pvList[i] = p
+		}
+		err := lvm.Vgcreate(name, pvList...)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### vgrename
+	 *
+	 * Renames an LVM volume group.
+	 *
+	 * **Accepts**:
+	 * - *OldName* (`string`): The VG's current name.
+	 * - *NewName* (`string`): The VG's new name.
+	 */
+	case "vgrename":
+		oldName := args[0].(string)
+		newName := args[1].(string)
+		_, err := lvm.Vgrename(oldName, newName)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### vgextend
+	 *
+	 * Adds PVs to an LVM volume group.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The target VG's name.
+	 * - *PVs* (`[string]`): A list containing the paths of the PVs to be included.
+	 */
+	case "vgextend":
+		name := args[0].(string)
+		pvs := []string{}
+		for _, pv := range args[1].([]interface{}) {
+			pvs = append(pvs, pv.(string))
+		}
+		pvList := make([]interface{}, len(pvs))
+		for i, p := range pvs {
+			pvList[i] = p
+		}
+		err := lvm.Vgextend(name, pvList...)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### vgreduce
+	 *
+	 * Removes PVs to an LVM volume group.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The target VG's name.
+	 * - *PVs* (`[string]`): A list containing the paths of the PVs to be removed.
+	 */
+	case "vgreduce":
+		name := args[0].(string)
+		pvs := []string{}
+		for _, pv := range args[1].([]interface{}) {
+			pvs = append(pvs, pv.(string))
+		}
+		pvList := make([]interface{}, len(pvs))
+		for i, p := range pvs {
+			pvList[i] = p
+		}
+		err := lvm.Vgreduce(name, pvList...)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### vgremove
+	 *
+	 * Deletes LVM volume group.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The volume group name.
+	 */
+	case "vgremove":
+		name := args[0].(string)
+		err := lvm.Vgremove(name)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### lvcreate
+	 *
+	 * Create LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Logical volume name.
+	 * - *VG* (`string`): Volume group name.
+	 * - *Type* (`string`): Logical volume type. See lvcreate(8) for available types. If unsure, use `linear`.
+	 * - *Size* (`float` or `string`): Logical volume size in MiB or a string containing a relative size (e.g. "100%FREE").
+	 */
+	case "lvcreate":
+		name := args[0].(string)
+		vg := args[1].(string)
+		lvType := args[2].(string)
+		vgSize := args[3]
+		err := lvm.Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### lvrename
+	 *
+	 * Renames an LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *OldName* (`string`): The LV's current name.
+	 * - *NewName* (`string`): The LV's new name.
+	 * - *VG* (`string`): Volume group the LV belongs to.
+	 */
+	case "lvrename":
+		oldName := args[0].(string)
+		newName := args[1].(string)
+		vg := args[2].(string)
+		_, err := lvm.Lvrename(oldName, newName, vg)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### lvremove
+	 *
+	 * Deletes LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): The logical volume name.
+	 */
+	case "lvremove":
+		name := args[0].(string)
+		err := lvm.Lvremove(name)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### make-thin-pool
+	 *
+	 * Creates a new LVM thin pool from two LVs: one for metadata and another one for the data itself.
+	 *
+	 * **Accepts**:
+	 * - *ThinDataLV* (`string`): The LV for storing data (in format `vg_name/lv_name`).
+	 * - *ThinMetaLV* (`string`): The LV for storing pool metadata (in format `vg_name/lv_name`).
+	 */
+	case "make-thin-pool":
+		thinDataLV := args[0].(string)
+		thinMetaLV := args[1].(string)
+		err := lvm.MakeThinPool(thinMetaLV, thinDataLV)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### lvcreate-thin
+	 *
+	 * Same as `lvcreate`, but creates a thin LV instead.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name.
+	 * - *VG* (`string`): Volume group name.
+	 * - *Size* (`float`): Volume group size in MiB.
+	 * - *Thinpool* (`string`): Name of the thin pool to create the LV from.
+	 */
+	case "lvcreate-thin":
+		name := args[0].(string)
+		vg := args[1].(string)
+		vgSize := args[2].(float64)
+		thinPool := args[3].(string)
+		err := lvm.LvThinCreate(name, vg, thinPool, vgSize)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+	/* !! ### lvm-format
+	 *
+	 * Same as `format`, but formats an LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
+	 */
+	case "lvm-format":
+		name := args[0].(string)
+		filesystem := args[1].(string)
+		lv, err := lvm.FindLv(name)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		dummyPart := Partition{
+			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
+			Filesystem: PartitionFs(filesystem),
+		}
+		err = MakeFs(&dummyPart)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		if len(args) == 3 {
+			label := args[2].(string)
+			err := dummyPart.SetLabel(label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
 		}
 	/* !! --- */
 	default:
-		return fmt.Errorf("Unrecognized operation %s", operation)
+		return fmt.Errorf("unrecognized operation %s", operation)
 	}
 
 	return nil
@@ -481,7 +715,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		case "efi":
 			grubTarget = EFI
 		default:
-			return fmt.Errorf("Failed to execute operation: %s: Unrecognized firmware type: '%s')", operation, target)
+			return fmt.Errorf("failed to execute operation: %s: Unrecognized firmware type: '%s')", operation, target)
 		}
 		err := RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, efiDevice)
 		if err != nil {
@@ -551,7 +785,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			return err
 		}
 	default:
-		return fmt.Errorf("Unrecognized operation %s", operation)
+		return fmt.Errorf("unrecognized operation %s", operation)
 	}
 
 	return nil
@@ -571,9 +805,6 @@ func (recipe *Recipe) RunPostInstall() error {
 func (recipe *Recipe) SetupMountpoints() error {
 	diskCache := map[string]*Disk{}
 	rootAMounted := false
-
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
 
 	/* We need to mount the partitions in order to prevent one mountpoint
 	 * from overriding another.
@@ -596,9 +827,37 @@ func (recipe *Recipe) SetupMountpoints() error {
 		mount_depth += 1
 	}
 
+	lvmExpr := regexp.MustCompile(`^/dev/(?P<vg>[\w-]+)/(?P<lv>[\w-]+)$`)
+	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
+	partExpr := regexp.MustCompile("[0-9]+$")
+
 	for _, mnt := range ordered_mountpoints {
+		baseRoot := RootA
+		if mnt.Target == "/" && rootAMounted {
+			baseRoot = RootB
+		} else if mnt.Target == "/" && !rootAMounted {
+			rootAMounted = true
+		}
+
+		// LVM partition
+		if lvmExpr.MatchString(mnt.Partition) {
+			lvmPartition := Partition{
+				Number: -1,
+				Path:   mnt.Partition,
+			}
+			err := lvmPartition.Mount(baseRoot + mnt.Target)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Regular partition
 		diskName := diskExpr.FindString(mnt.Partition)
-		part := partExpr.FindString(mnt.Partition)
+		part, err := strconv.Atoi(partExpr.FindString(mnt.Partition))
+		if err != nil {
+			return err
+		}
 
 		disk, ok := diskCache[diskName]
 		if !ok {
@@ -610,19 +869,7 @@ func (recipe *Recipe) SetupMountpoints() error {
 			disk = diskCache[diskName]
 		}
 
-		partInt, err := strconv.Atoi(part)
-		if err != nil {
-			return err
-		}
-
-		baseRoot := RootA
-		if mnt.Target == "/" && rootAMounted {
-			baseRoot = RootB
-		} else if mnt.Target == "/" && !rootAMounted {
-			rootAMounted = true
-		}
-
-		err = disk.Partitions[partInt-1].Mount(baseRoot + mnt.Target)
+		err = disk.Partitions[part-1].Mount(baseRoot + mnt.Target)
 		if err != nil {
 			return err
 		}
@@ -731,50 +978,50 @@ func (recipe *Recipe) Install() error {
 			return err
 		}
 	default:
-		return fmt.Errorf("Unsupported installation method '%s'", recipe.Installation.Method)
+		return fmt.Errorf("unsupported installation method '%s'", recipe.Installation.Method)
 	}
 
 	// Setup crypttab (if needed)
 	crypttabEntries, err := recipe.setupCrypttabEntries()
 	if err != nil {
-		return fmt.Errorf("Failed to generate crypttab entries: %s", err)
+		return fmt.Errorf("failed to generate crypttab entries: %s", err)
 	}
 	if len(crypttabEntries) > 0 {
 		err = GenCrypttab(RootA, crypttabEntries)
 		if err != nil {
-			return fmt.Errorf("Failed to generate crypttab: %s", err)
+			return fmt.Errorf("failed to generate crypttab: %s", err)
 		}
 	}
 
 	// Setup fstab
 	fstabEntries, err := recipe.setupFstabEntries()
 	if err != nil {
-		return fmt.Errorf("Failed to generate fstab entries: %s", err)
+		return fmt.Errorf("failed to generate fstab entries: %s", err)
 	}
 	err = GenFstab(RootA, fstabEntries)
 	if err != nil {
-		return fmt.Errorf("Failed to generate fstab: %s", err)
+		return fmt.Errorf("failed to generate fstab: %s", err)
 	}
 
 	// Initramfs pre-scripts
 	for _, preCmd := range recipe.Installation.InitramfsPre {
 		err := RunInChroot(RootA, preCmd)
 		if err != nil {
-			return fmt.Errorf("Initramfs pre-script '%s' failed: %s", preCmd, err)
+			return fmt.Errorf("initramfs pre-script '%s' failed: %s", preCmd, err)
 		}
 	}
 
 	// Update Initramfs
 	err = UpdateInitramfs(RootA)
 	if err != nil {
-		return fmt.Errorf("Failed to update initramfs: %s", err)
+		return fmt.Errorf("failed to update initramfs: %s", err)
 	}
 
 	// Initramfs post-scripts
 	for _, postCmd := range recipe.Installation.InitramfsPost {
 		err := RunInChroot(RootA, postCmd)
 		if err != nil {
-			return fmt.Errorf("Initramfs post-script '%s' failed: %s", postCmd, err)
+			return fmt.Errorf("initramfs post-script '%s' failed: %s", postCmd, err)
 		}
 	}
 

@@ -1,4 +1,4 @@
-name: Build
+name: Build and Test
 
 on:
   push:
@@ -7,11 +7,10 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/vanilla-os/pico:main
-      
+
     steps:
     - uses: actions/checkout@v4
 
@@ -23,10 +22,22 @@ jobs:
     - name: Install build dependencies
       run: |
           apt-get update
-          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev
+          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2
 
     - name: Build
       run: go build -v ./...
 
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install test dependencies
+      run: |
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
+        ./utils/create_test_env.sh
+
     - name: Test
-      run: go test -v ./...
+      run: |
+        distrobox enter -r albius_test -- sudo go test -v ./...

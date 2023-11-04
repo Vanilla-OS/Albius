@@ -10,11 +10,6 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/vanilla-os/pico:main
-      options: --privileged --user root
-      volumes:
-      - /dev:/dev
 
     steps:
     - uses: actions/checkout@v4
@@ -26,7 +21,6 @@ jobs:
 
     - name: Install build dependencies
       run: |
-          systemctl stop systemd-udevd
           apt-get update
           apt-get install -y build-essential pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 parted
 

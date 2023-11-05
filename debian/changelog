@@ -1,3 +1,9 @@
+albius (0.3.1) unstable; urgency=critical
+
+  * LUKS on LVM support
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 05 Nov 2023 11:47:00 -0300
+
 albius (0.3.0) unstable; urgency=critical
 
   * LVM support

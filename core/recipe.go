@@ -125,10 +125,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			// UUID, so we loop until it gives us one
 			uuid := ""
 			for uuid == "" {
-				uuid, err = part.GetUUID()
-			}
-			if err != nil {
-				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+				uuid, _ = part.GetUUID()
 			}
 			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
@@ -270,6 +267,12 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err = LuksFormat(&part, password)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		// lsblk seems to take a few milliseconds to update the partition's
+		// UUID, so we loop until it gives us one
+		uuid := ""
+		for uuid == "" {
+			uuid, _ = part.GetUUID()
 		}
 		err = LUKSMakeFs(&part)
 		if err != nil {
@@ -527,6 +530,53 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if len(args) == 3 {
 			label := args[2].(string)
 			err := dummyPart.SetLabel(label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
+		}
+	/* !! ### lvm-luks-format
+	 *
+	 * Same as `luks-format`, but formats an LVM logical volume.
+	 *
+	 * **Accepts**:
+	 * - *Name* (`string`): Thin logical volume name (in format `vg_name/lv_name`).
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Password* (`string`): The password used to encrypt the volume.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
+	 */
+	case "lvm-luks-format":
+		name := args[0].(string)
+		filesystem := args[1].(string)
+		password := args[2].(string)
+		lv, err := lvm.FindLv(name)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		dummyPart := Partition{
+			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
+			Filesystem: PartitionFs(filesystem),
+		}
+		err = LuksFormat(&dummyPart, password)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		// lsblk seems to take a few milliseconds to update the partition's
+		// UUID, so we loop until it gives us one
+		uuid := ""
+		for uuid == "" {
+			uuid, _ = dummyPart.GetUUID()
+		}
+		err = LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		err = LUKSMakeFs(&dummyPart)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		if len(args) == 4 {
+			label := args[3].(string)
+			err := LUKSSetLabel(&dummyPart, label)
 			if err != nil {
 				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 			}

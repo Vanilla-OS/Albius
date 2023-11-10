@@ -274,6 +274,10 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for uuid == "" {
 			uuid, _ = part.GetUUID()
 		}
+		err = LuksOpen(&part, fmt.Sprintf("luks-%s", uuid), password)
+		if err != nil {
+			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
 		err = LUKSMakeFs(&part)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)

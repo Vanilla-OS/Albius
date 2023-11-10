@@ -1,3 +1,9 @@
+albius (0.3.2) unstable; urgency=critical
+
+  * Fix luks-format command crash
+
+ -- Mateus Melchiades <matbme@duck.com>  Sat, 10 Nov 2023 20:20:00 -0300
+
 albius (0.3.1) unstable; urgency=critical
 
   * LUKS on LVM support

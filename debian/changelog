@@ -1,6 +1,7 @@
 albius (0.3.2) unstable; urgency=critical
 
   * Fix luks-format command crash
+  * Add optional "label" parameter in format and luks-format
 
  -- Mateus Melchiades <matbme@duck.com>  Sat, 10 Nov 2023 20:20:00 -0300
 

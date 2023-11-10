@@ -234,6 +234,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * **Accepts**:
 	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 	 */
 	case "format":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -246,6 +247,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
 		}
+		if len(args) == 3 {
+			label := args[2].(string)
+			err := disk.Partitions[partNum-1].SetLabel(label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
+		}
 	/* !! ### luks-format
 	 *
 	 * Same as `format` but encrypts the partition with LUKS2.
@@ -254,6 +262,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
 	 * - *Password* (`string`): The password used to encrypt the partition.
+	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 	 */
 	case "luks-format":
 		partNum, err := strconv.Atoi(args[0].(string))
@@ -281,6 +290,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		err = LUKSMakeFs(&part)
 		if err != nil {
 			return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+		}
+		if len(args) == 4 {
+			label := args[3].(string)
+			err := LUKSSetLabel(&part, label)
+			if err != nil {
+				return fmt.Errorf("failed to execute operation %s: %s", operation, err)
+			}
 		}
 	/* !! ### pvcreate
 	 *

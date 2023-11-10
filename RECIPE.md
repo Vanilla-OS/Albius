@@ -66,6 +66,7 @@ Format an existing partition to a specified filesystem. This operation will dest
 **Accepts**:
 - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
+- *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 
 ### luks-format
 
@@ -75,6 +76,7 @@ Same as `format` but encrypts the partition with LUKS2.
 - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`, `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*.
 - *Password* (`string`): The password used to encrypt the partition.
+- *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 
 ### pvcreate
 

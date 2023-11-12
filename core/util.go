@@ -1,17 +1,27 @@
 package albius
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"reflect"
 )
 
+// RunCommand executes a command in a subshell.
 func RunCommand(command string) error {
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	err := cmd.Run()
+
+	exitErr, ok := err.(*exec.ExitError)
+	if err != nil && ok {
+		return errors.New(string(exitErr.Stderr))
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func setField(obj interface{}, name string, value interface{}) error {

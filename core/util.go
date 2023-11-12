@@ -19,11 +19,11 @@ func setField(obj interface{}, name string, value interface{}) error {
 	structFieldValue := structValue.FieldByName(name)
 
 	if !structFieldValue.IsValid() {
-		return fmt.Errorf("No such field: %s in obj", name)
+		return fmt.Errorf("no such field: %s in obj", name)
 	}
 
 	if !structFieldValue.CanSet() {
-		return fmt.Errorf("Cannot set %s field value", name)
+		return fmt.Errorf("cannot set %s field value", name)
 	}
 
 	structFieldType := structFieldValue.Type()
@@ -36,7 +36,7 @@ func setField(obj interface{}, name string, value interface{}) error {
 		} else if structFieldType.Name() == "DiskLabel" && val.Type().Kind() == reflect.String {
 			convertedVal = reflect.ValueOf(DiskLabel(val.Interface().(string)))
 		} else {
-			return fmt.Errorf("Provided value type for %s did not match obj field type. Expected %v, got %v.", name, structFieldType, val.Type())
+			return fmt.Errorf("provided value type for %s did not match obj field type. Expected %v, got %v", name, structFieldType, val.Type())
 		}
 	} else {
 		convertedVal = val

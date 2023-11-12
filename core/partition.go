@@ -65,7 +65,7 @@ func (part *Partition) Mount(location string) error {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(checkPartCmd, mountPath))
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("Failed to locate partition %s: %s", mountPath, err)
+		return fmt.Errorf("failed to locate partition %s: %s", mountPath, err)
 	}
 	if strings.Contains(string(output), location) {
 		return nil
@@ -73,7 +73,7 @@ func (part *Partition) Mount(location string) error {
 
 	err = RunCommand(fmt.Sprintf(mountCmd, mountPath, location))
 	if err != nil {
-		return fmt.Errorf("Failed to run mount command: %s", err)
+		return fmt.Errorf("failed to run mount command: %s", err)
 	}
 
 	return nil
@@ -85,12 +85,12 @@ func (part *Partition) IsMounted() (bool, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(isMountedCmd, part.Path))
 	output, err := cmd.Output()
 	if err != nil {
-		return false, fmt.Errorf("Failed to check if partition is mounted: %s", err)
+		return false, fmt.Errorf("failed to check if partition is mounted: %s", err)
 	}
 
 	mounts, err := strconv.Atoi(strings.TrimSpace(string(output)))
 	if err != nil {
-		return false, fmt.Errorf("Failed to convert str to int: %s", err)
+		return false, fmt.Errorf("failed to convert str to int: %s", err)
 	}
 
 	if mounts > 0 {
@@ -139,7 +139,7 @@ func (part *Partition) UmountPartition() error {
 
 	err = RunCommand(fmt.Sprintf(umountCmd, mountTarget))
 	if err != nil {
-		return fmt.Errorf("Failed to run umount command: %s", err)
+		return fmt.Errorf("failed to run umount command: %s", err)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func UmountDirectory(dir string) error {
 
 	err := RunCommand(fmt.Sprintf(umountCmd, dir))
 	if err != nil {
-		return fmt.Errorf("Failed to run umount command: %s", err)
+		return fmt.Errorf("failed to run umount command: %s", err)
 	}
 
 	return nil
@@ -166,7 +166,7 @@ func (target *Partition) RemovePartition() error {
 
 	err := RunCommand(fmt.Sprintf(rmPartCmd, disk, part))
 	if err != nil {
-		return fmt.Errorf("Failed to remove partition: %s", err)
+		return fmt.Errorf("failed to remove partition: %s", err)
 	}
 
 	return nil
@@ -182,7 +182,7 @@ func (target *Partition) ResizePartition(newEnd int) error {
 
 	err := RunCommand(fmt.Sprintf(resizePartCmd, disk, part, newEnd))
 	if err != nil {
-		return fmt.Errorf("Failed to resize partition: %s", err)
+		return fmt.Errorf("failed to resize partition: %s", err)
 	}
 
 	return nil
@@ -198,7 +198,7 @@ func (target *Partition) NamePartition(name string) error {
 
 	err := RunCommand(fmt.Sprintf(namePartCmd, disk, part, name))
 	if err != nil {
-		return fmt.Errorf("Failed to name partition: %s", err)
+		return fmt.Errorf("failed to name partition: %s", err)
 	}
 
 	return nil
@@ -221,7 +221,7 @@ func (target *Partition) SetPartitionFlag(flag string, state bool) error {
 
 	err := RunCommand(fmt.Sprintf(setPartCmd, disk, part, flag, stateStr))
 	if err != nil {
-		return fmt.Errorf("Failed to name partition: %s", err)
+		return fmt.Errorf("failed to name partition: %s", err)
 	}
 
 	return nil
@@ -243,7 +243,7 @@ func (target *Partition) GetUUID() (string, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, target.Path))
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
+		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
 
 	return string(output[:len(output)-1]), nil
@@ -255,7 +255,7 @@ func GetUUIDByPath(path string) (string, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get partition UUID: %s", err)
+		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
 
 	return string(output[:len(output)-1]), nil
@@ -267,7 +267,7 @@ func GetFilesystemByPath(path string) (string, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get partition FSTYPE: %s", err)
+		return "", fmt.Errorf("failed to get partition FSTYPE: %s", err)
 	}
 
 	return string(output[:len(output)-1]), nil
@@ -280,7 +280,7 @@ func (part *Partition) GetLUKSMapperPath() (string, error) {
 		return "", err
 	}
 	if !luks {
-		return "", fmt.Errorf("Cannot get mapper path for %s. Partition is not LUKS-formatted", part.Path)
+		return "", fmt.Errorf("cannot get mapper path for %s. Partition is not LUKS-formatted", part.Path)
 	}
 
 	partUUID, err := part.GetUUID()
@@ -300,7 +300,7 @@ func (part *Partition) SetLabel(label string) error {
 	case BTRFS:
 		labelCmd = fmt.Sprintf("btrfs filesystem label %s %s", part.Path, label)
 	case REISERFS:
-		labelCmd = fmt.Sprintf("reiserfstune –l %s %s", label, part.Path)
+		labelCmd = fmt.Sprintf("reiserfstune -l %s %s", label, part.Path)
 	case XFS:
 		labelCmd = fmt.Sprintf("xfs_admin -L %s %s", label, part.Path)
 	case LINUX_SWAP:
@@ -308,12 +308,12 @@ func (part *Partition) SetLabel(label string) error {
 	case NTFS:
 		labelCmd = fmt.Sprintf("ntfslabel %s %s", part.Path, label)
 	default:
-		return fmt.Errorf("Unsupported filesystem: %s", part.Filesystem)
+		return fmt.Errorf("unsupported filesystem: %s", part.Filesystem)
 	}
 
 	err := RunCommand(labelCmd)
 	if err != nil {
-		return fmt.Errorf("Failed to label partition %s: %s", part.Path, err)
+		return fmt.Errorf("failed to label partition %s: %s", part.Path, err)
 	}
 
 	return nil

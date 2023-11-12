@@ -20,7 +20,7 @@ func IsLuks(part *Partition) (bool, error) {
 				return false, nil
 			}
 		}
-		return false, fmt.Errorf("Failed to check if %s is LUKS-encrypted: %s", part.Path, err)
+		return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.Path, err)
 	}
 
 	return true, nil
@@ -51,7 +51,7 @@ func LuksOpen(part *Partition, mapping, password string) error {
 
 	err := RunCommand(fmt.Sprintf(luksOpenCmd, part.Path, mapping))
 	if err != nil {
-		return fmt.Errorf("Failed to open LUKS-encrypted partition: %s", err)
+		return fmt.Errorf("failed to open LUKS-encrypted partition: %s", err)
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func LuksTryOpen(part *Partition, mapping, password string) error {
 	} else if os.IsNotExist(err) {
 		return LuksOpen(part, mapping, password)
 	} else {
-		return fmt.Errorf("Failed to try-open LUKS-encrypted partition: %s", err)
+		return fmt.Errorf("failed to try-open LUKS-encrypted partition: %s", err)
 	}
 }
 
@@ -79,7 +79,7 @@ func LuksClose(mapping string) error {
 
 	err := RunCommand(fmt.Sprintf(luksCloseCmd, mapping))
 	if err != nil {
-		return fmt.Errorf("Failed to close LUKS-encrypted partition: %s", err)
+		return fmt.Errorf("failed to close LUKS-encrypted partition: %s", err)
 	}
 
 	return nil
@@ -90,7 +90,7 @@ func LuksFormat(part *Partition, password string) error {
 
 	err := RunCommand(fmt.Sprintf(luksFormatCmd, password, part.Path))
 	if err != nil {
-		return fmt.Errorf("Failed to create LUKS-encrypted partition: %s", err)
+		return fmt.Errorf("failed to create LUKS-encrypted partition: %s", err)
 	}
 
 	return nil
@@ -121,7 +121,7 @@ func GetLUKSFilesystemByPath(path string) (string, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
 	output, err := cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("Failed to get encrypted partition FSTYPE: %s", err)
+		return "", fmt.Errorf("failed to get encrypted partition FSTYPE: %s", err)
 	}
 
 	return string(output[:len(output)-1]), nil

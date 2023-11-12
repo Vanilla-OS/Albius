@@ -2,9 +2,7 @@ package albius
 
 import (
 	"fmt"
-	"os/exec"
-	"regexp"
-	"strconv"
+	"slices"
 	"strings"
 )
 
@@ -58,19 +56,16 @@ func (part *Partition) Mount(location string) error {
 		mountPath = part.Path
 	}
 
-	mountCmd := "mount -m %s %s"
-
-	// Check if device is already mounted at location
-	checkPartCmd := "lsblk -n -o MOUNTPOINTS %s"
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(checkPartCmd, mountPath))
-	output, err := cmd.Output()
+	// Check if partition is already mounted at location
+	mountpoints, err := part.Mountpoints()
 	if err != nil {
-		return fmt.Errorf("failed to locate partition %s: %s", mountPath, err)
+		return err
 	}
-	if strings.Contains(string(output), location) {
+	if slices.Contains(mountpoints, location) {
 		return nil
 	}
 
+	mountCmd := "mount -m %s %s"
 	err = RunCommand(fmt.Sprintf(mountCmd, mountPath, location))
 	if err != nil {
 		return fmt.Errorf("failed to run mount command: %s", err)
@@ -79,28 +74,26 @@ func (part *Partition) Mount(location string) error {
 	return nil
 }
 
-func (part *Partition) IsMounted() (bool, error) {
-	isMountedCmd := "mount | grep %s | wc -l"
-
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(isMountedCmd, part.Path))
-	output, err := cmd.Output()
+func (part *Partition) Mountpoints() ([]string, error) {
+	mountpointsCmd := "lsblk -n -o MOUNTPOINTS %s"
+	output, err := OutputCommand(fmt.Sprintf(mountpointsCmd, part.Path))
 	if err != nil {
-		return false, fmt.Errorf("failed to check if partition is mounted: %s", err)
+		return []string{}, fmt.Errorf("failed to list mountpoints for %s: %s", part.Path, err)
 	}
 
-	mounts, err := strconv.Atoi(strings.TrimSpace(string(output)))
-	if err != nil {
-		return false, fmt.Errorf("failed to convert str to int: %s", err)
-	}
-
-	if mounts > 0 {
-		return true, nil
-	}
-
-	return false, nil
+	return strings.Split(output, "\n"), nil
 }
 
-func (part *Partition) UmountPartition() error {
+func (part *Partition) IsMounted() (bool, error) {
+	mountpoints, err := part.Mountpoints()
+	if err != nil {
+		return false, err
+	}
+
+	return len(mountpoints) > 0, nil
+}
+
+func (part *Partition) UnmountPartition() error {
 	var mountTarget string
 
 	// Check if partition is mounted first
@@ -136,7 +129,6 @@ func (part *Partition) UmountPartition() error {
 	}
 
 	umountCmd := "umount %s"
-
 	err = RunCommand(fmt.Sprintf(umountCmd, mountTarget))
 	if err != nil {
 		return fmt.Errorf("failed to run umount command: %s", err)
@@ -145,7 +137,7 @@ func (part *Partition) UmountPartition() error {
 	return nil
 }
 
-func UmountDirectory(dir string) error {
+func UnmountDirectory(dir string) error {
 	umountCmd := "umount %s"
 
 	err := RunCommand(fmt.Sprintf(umountCmd, dir))
@@ -157,13 +149,8 @@ func UmountDirectory(dir string) error {
 }
 
 func (target *Partition) RemovePartition() error {
+	disk, part := SeparateDiskPart(target.Path)
 	rmPartCmd := "parted -s %s rm %s"
-
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
-	disk := diskExpr.FindString(target.Path)
-	part := partExpr.FindString(target.Path)
-
 	err := RunCommand(fmt.Sprintf(rmPartCmd, disk, part))
 	if err != nil {
 		return fmt.Errorf("failed to remove partition: %s", err)
@@ -173,13 +160,8 @@ func (target *Partition) RemovePartition() error {
 }
 
 func (target *Partition) ResizePartition(newEnd int) error {
+	disk, part := SeparateDiskPart(target.Path)
 	resizePartCmd := "parted -s %s unit MiB resizepart %s %d"
-
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
-	disk := diskExpr.FindString(target.Path)
-	part := partExpr.FindString(target.Path)
-
 	err := RunCommand(fmt.Sprintf(resizePartCmd, disk, part, newEnd))
 	if err != nil {
 		return fmt.Errorf("failed to resize partition: %s", err)
@@ -189,13 +171,8 @@ func (target *Partition) ResizePartition(newEnd int) error {
 }
 
 func (target *Partition) NamePartition(name string) error {
+	disk, part := SeparateDiskPart(target.Path)
 	namePartCmd := "parted -s %s name %s %s"
-
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
-	disk := diskExpr.FindString(target.Path)
-	part := partExpr.FindString(target.Path)
-
 	err := RunCommand(fmt.Sprintf(namePartCmd, disk, part, name))
 	if err != nil {
 		return fmt.Errorf("failed to name partition: %s", err)
@@ -205,20 +182,13 @@ func (target *Partition) NamePartition(name string) error {
 }
 
 func (target *Partition) SetPartitionFlag(flag string, state bool) error {
-	setPartCmd := "parted -s %s set %s %s %s"
-
-	var stateStr string
-	if !state {
-		stateStr = "off"
-	} else {
+	stateStr := "off"
+	if state {
 		stateStr = "on"
 	}
 
-	diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-	partExpr := regexp.MustCompile("[0-9]+$")
-	disk := diskExpr.FindString(target.Path)
-	part := partExpr.FindString(target.Path)
-
+	disk, part := SeparateDiskPart(target.Path)
+	setPartCmd := "parted -s %s set %s %s %s"
 	err := RunCommand(fmt.Sprintf(setPartCmd, disk, part, flag, stateStr))
 	if err != nil {
 		return fmt.Errorf("failed to name partition: %s", err)
@@ -229,8 +199,7 @@ func (target *Partition) SetPartitionFlag(flag string, state bool) error {
 
 func (target *Partition) FillPath(basePath string) {
 	targetPathEnd := basePath[len(basePath)-1]
-	//                  "0"                    "9"
-	if targetPathEnd >= 48 && targetPathEnd <= 57 {
+	if targetPathEnd >= '0' && targetPathEnd <= '9' {
 		target.Path = fmt.Sprintf("%sp%d", basePath, target.Number)
 	} else {
 		target.Path = fmt.Sprintf("%s%d", basePath, target.Number)
@@ -240,37 +209,34 @@ func (target *Partition) FillPath(basePath string) {
 func (target *Partition) GetUUID() (string, error) {
 	lsblkCmd := "lsblk -d -n -o UUID %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, target.Path))
-	output, err := cmd.Output()
+	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, target.Path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
 
-	return string(output[:len(output)-1]), nil
+	return output, nil
 }
 
 func GetUUIDByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -d -n -o UUID %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
-	output, err := cmd.Output()
+	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
 
-	return string(output[:len(output)-1]), nil
+	return output, nil
 }
 
 func GetFilesystemByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -d -n -o FSTYPE %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
-	output, err := cmd.Output()
+	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition FSTYPE: %s", err)
 	}
 
-	return string(output[:len(output)-1]), nil
+	return output, nil
 }
 
 func (part *Partition) GetLUKSMapperPath() (string, error) {

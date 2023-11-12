@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -129,13 +128,10 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 	// base, consider keeping it.
 	if target == EFI {
 		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=vanilla --loader=\"\\EFI\\debian\\shimx64.efi\""
-		diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-		partExpr := regexp.MustCompile("[0-9]+$")
 		if len(efiDevice) == 0 || efiDevice[0] == "" {
 			return errors.New("EFI device was not specified")
 		}
-		diskName := diskExpr.FindString(efiDevice[0])
-		part := partExpr.FindString(efiDevice[0])
+		diskName, part := SeparateDiskPart(efiDevice[0])
 		err = RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
 		if err != nil {
 			return fmt.Errorf("failed to run grub-install: %s", err)

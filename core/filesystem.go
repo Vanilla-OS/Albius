@@ -3,7 +3,6 @@ package albius
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -20,10 +19,7 @@ func Unsquashfs(filesystem, destination string, force bool) error {
 		forceFlag = ""
 	}
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(unsquashfsCmd, forceFlag, destination, filesystem))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err := RunCommand(fmt.Sprintf(unsquashfsCmd, forceFlag, destination, filesystem))
 	if err != nil {
 		return fmt.Errorf("failed to run unsquashfs: %s", err)
 	}
@@ -94,49 +90,25 @@ func GenFstab(targetRoot string, entries [][]string) error {
 
 func UpdateInitramfs(root string) error {
 	// Setup mountpoints
-	if err := RunCommand(fmt.Sprintf("mount --bind /dev %s/dev", root)); err != nil {
-		return fmt.Errorf("error mounting /dev to chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("mount --bind /dev/pts %s/dev/pts", root)); err != nil {
-		return fmt.Errorf("error mounting /dev/pts to chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("mount --bind /proc %s/proc", root)); err != nil {
-		return fmt.Errorf("error mounting /proc to chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("mount --bind /sys %s/sys", root)); err != nil {
-		return fmt.Errorf("error mounting /sys to chroot: %s", err)
+	mountOrder := []string{"/dev", "/dev/pts", "/proc", "/sys"}
+	for _, mount := range mountOrder {
+		if err := RunCommand(fmt.Sprintf("mount --bind %s %s%s", mount, root, mount)); err != nil {
+			return fmt.Errorf("error mounting %s to chroot: %s", mount, err)
+		}
 	}
 
 	updInitramfsCmd := "update-initramfs -c -k all"
-
 	err := RunInChroot(root, updInitramfsCmd)
 	if err != nil {
 		return fmt.Errorf("failed to run update-initramfs command: %s", err)
 	}
 
-	if err := RunCommand(fmt.Sprintf("umount %s/dev/pts", root)); err != nil {
-		return fmt.Errorf("error unmounting /dev/pts fron chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("umount %s/dev", root)); err != nil {
-		return fmt.Errorf("error unmounting /dev from chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("umount %s/proc", root)); err != nil {
-		return fmt.Errorf("error unmounting /proc from chroot: %s", err)
-	}
-	if err := RunCommand(fmt.Sprintf("umount %s/sys", root)); err != nil {
-		return fmt.Errorf("error unmounting /sys from chroot: %s", err)
-	}
-
-	return nil
-}
-
-func RunInChroot(root, command string) error {
-	cmd := exec.Command("chroot", root, "sh", "-c", command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		return err
+	// Cleanup mountpoints
+	unmountOrder := []string{"/dev/pts", "/dev", "/proc", "/sys"}
+	for _, mount := range unmountOrder {
+		if err := RunCommand(fmt.Sprintf("umount %s%s", root, mount)); err != nil {
+			return fmt.Errorf("error unmounting %s fron chroot: %s", mount, err)
+		}
 	}
 
 	return nil

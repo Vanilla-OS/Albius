@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
 	"strconv"
 )
 
@@ -65,25 +64,22 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 	return sectors, nil
 }
 
-type LocateDiskOutput struct {
-	Disk Disk
-}
-
 func LocateDisk(diskname string) (*Disk, error) {
-	findPartitionCmd := "parted -sj %s unit MiB print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, diskname))
-	output, err := cmd.Output()
+	findPartitionCmd := "parted -sj %s unit MiB print"
+	output, err := OutputCommand(fmt.Sprintf(findPartitionCmd, diskname))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list disk: %s", err)
 	}
 
 	var device *Disk
-	var decoded *LocateDiskOutput
-	err = json.Unmarshal(output, &decoded)
+	var decoded struct {
+		Disk Disk
+	}
+	err = json.Unmarshal([]byte(output), &decoded)
 	if err != nil {
 		// Try a different approach suitable for when the disk is unformatted
 		var decodedMap map[string]map[string]interface{}
-		err = json.Unmarshal(output, &decodedMap)
+		err = json.Unmarshal([]byte(output), &decodedMap)
 		if err != nil {
 			return nil, errors.New("parted output contains invalid json")
 		}
@@ -131,7 +127,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
 	for _, part := range disk.Partitions {
-		if err := part.UmountPartition(); err != nil {
+		if err := part.UnmountPartition(); err != nil {
 			return fmt.Errorf("failed to unmount partition %s: %s", part.Path, err)
 		}
 	}

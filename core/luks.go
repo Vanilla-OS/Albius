@@ -13,11 +13,12 @@ func IsLuks(part *Partition) (bool, error) {
 	cmd := exec.Command("sh", "-c", fmt.Sprintf(isLuksCmd, part.Path))
 	err := cmd.Run()
 	if err != nil {
-		// We expect the command to return exit status 1 if partition isn't
-		// LUKS-encrypted
+		// We expect the command to return exit status 1 if partition isn't LUKS-encrypted
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.ExitCode() == 1 {
 				return false, nil
+			} else {
+				return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.Path, string(exitError.Stderr))
 			}
 		}
 		return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.Path, err)
@@ -35,8 +36,10 @@ func IsPathLuks(path string) (bool, error) {
 
 // LuksOpen opens a LUKS-encrypted partition, mapping the unencrypted filesystem
 // to /dev/mapper/<mapping>.
+//
 // If password is an empty string, cryptsetup will prompt the password when
 // executed.
+//
 // WARNING: This function will return an error if mapping already exists, use
 // LuksTryOpen() to open a device while ignoring existing mappings
 func LuksOpen(part *Partition, mapping, password string) error {
@@ -59,9 +62,11 @@ func LuksOpen(part *Partition, mapping, password string) error {
 
 // LuksTryOpen opens a LUKS-encrypted partition, failing silently if mapping
 // already exists.
+//
 // This is useful for when we pass a mapping like "luks-<uuid>", which we are
 // certain is unique and the operation failing means that the device is already
 // open.
+//
 // The function still returns other errors, however.
 func LuksTryOpen(part *Partition, mapping, password string) error {
 	_, err := os.Stat(fmt.Sprintf("/dev/mapper/%s", mapping))
@@ -117,14 +122,12 @@ func GenCrypttab(targetRoot string, entries [][]string) error {
 
 func GetLUKSFilesystemByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -n -o FSTYPE %s | sed '/crypto_LUKS/d'"
-
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(lsblkCmd, path))
-	output, err := cmd.Output()
+	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get encrypted partition FSTYPE: %s", err)
 	}
 
-	return string(output[:len(output)-1]), nil
+	return output, nil
 }
 
 // LUKSMakeFs creates a filesystem inside of a LUKS-formatted partition. Use

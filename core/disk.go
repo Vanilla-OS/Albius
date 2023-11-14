@@ -2,7 +2,6 @@ package albius
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 )
@@ -19,10 +18,12 @@ type Sector struct {
 }
 
 type Disk struct {
-	Path, Size, Model, Transport                         string
-	Label                                                DiskLabel
-	LogicalSectorSize, PhysicalSectorSize, MaxPartitions int
-	Partitions                                           []Partition
+	Path, Size, Model, Transport string
+	Label                        DiskLabel
+	LogicalSectorSize            int `json:"logical-sector-size"`
+	PhysicalSectorSize           int `json:"physical-sector-size"`
+	MaxPartitions                int `json:"max-partitions"`
+	Partitions                   []Partition
 }
 
 func (disk *Disk) AvailableSectors() ([]Sector, error) {
@@ -67,42 +68,25 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 func LocateDisk(diskname string) (*Disk, error) {
 	findPartitionCmd := "parted -sj %s unit MiB print"
 	output, err := OutputCommand(fmt.Sprintf(findPartitionCmd, diskname))
-	if err != nil {
+	// If disk is unformatted, parted returns the expected json but also throws an error.
+	// We can assume we have all the necessary information if output isn't empty.
+	if err != nil && output == "" {
 		return nil, fmt.Errorf("failed to list disk: %s", err)
 	}
 
-	var device *Disk
 	var decoded struct {
 		Disk Disk
 	}
 	err = json.Unmarshal([]byte(output), &decoded)
 	if err != nil {
-		// Try a different approach suitable for when the disk is unformatted
-		var decodedMap map[string]map[string]interface{}
-		err = json.Unmarshal([]byte(output), &decodedMap)
-		if err != nil {
-			return nil, errors.New("parted output contains invalid json")
-		}
-		device := new(Disk)
-		for k, v := range decodedMap["Disk"] {
-			err := setField(device, k, v)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode parted output: %s", err)
-			}
-		}
-	} else {
-		device = &decoded.Disk
-	}
-
-	if device == nil {
 		return nil, fmt.Errorf("could not find device %s", diskname)
 	}
 
-	for i := 0; i < len(device.Partitions); i++ {
-		device.Partitions[i].FillPath(device.Path)
+	for i := 0; i < len(decoded.Disk.Partitions); i++ {
+		decoded.Disk.Partitions[i].FillPath(decoded.Disk.Path)
 	}
 
-	return device, nil
+	return &decoded.Disk, nil
 }
 
 func (disk *Disk) Update() error {

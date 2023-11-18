@@ -611,7 +611,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 
 func (recipe *Recipe) RunSetup() error {
 	for i, step := range recipe.Setup {
-		fmt.Printf("Setup [%d/%d]: %s", i, len(recipe.Setup), step.Operation)
+		fmt.Printf("Setup [%d/%d]: %s\n", i+1, len(recipe.Setup), step.Operation)
 		err := runSetupOperation(step.Disk, step.Operation, step.Params)
 		if err != nil {
 			return fmt.Errorf("failed to run setup operation %s: %s", step.Operation, err)
@@ -864,7 +864,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 
 func (recipe *Recipe) RunPostInstall() error {
 	for i, step := range recipe.PostInstallation {
-		fmt.Printf("Post-installation [%d/%d]: %s", i, len(recipe.PostInstallation), step.Operation)
+		fmt.Printf("Post-installation [%d/%d]: %s\n", i+1, len(recipe.PostInstallation), step.Operation)
 		err := runPostInstallOperation(step.Chroot, step.Operation, step.Params)
 		if err != nil {
 			return fmt.Errorf("failed to run post-install operation %s: %s", step.Operation, err)

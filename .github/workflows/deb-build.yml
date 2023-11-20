@@ -30,7 +30,7 @@ jobs:
         dpkg-buildpackage --no-sign
         mv ../*.deb ../albius.deb
 
-    - uses: softprops/action-gh-release@v1
+    - uses: softprops/action-gh-release@v0.1.15
       with:
         token: "${{ secrets.GITHUB_TOKEN }}"
         tag_name: "continuous"

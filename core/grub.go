@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -28,7 +27,7 @@ func GetGrubConfig(targetRoot string) (GrubConfig, error) {
 
 	content, err := os.ReadFile(targetRootGrubFile)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read GRUB config file: %s", err)
+		return nil, fmt.Errorf("failed to read GRUB config file: %s", err)
 	}
 
 	config := GrubConfig{}
@@ -54,7 +53,7 @@ func WriteGrubConfig(targetRoot string, config GrubConfig) error {
 	targetRootGrubFile := filepath.Join(targetRoot, "/etc/default/grub")
 	err := os.WriteFile(targetRootGrubFile, fileContents, 0644)
 	if err != nil {
-		return fmt.Errorf("Failed to write GRUB config file: %s", err)
+		return fmt.Errorf("failed to write GRUB config file: %s", err)
 	}
 
 	return nil
@@ -63,18 +62,18 @@ func WriteGrubConfig(targetRoot string, config GrubConfig) error {
 func AddGrubScript(targetRoot, scriptPath string) error {
 	// Ensure script exists
 	if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
-		return fmt.Errorf("Error adding GRUB script: %s does not exist", scriptPath)
+		return fmt.Errorf("error adding GRUB script: %s does not exist", scriptPath)
 	}
 
 	contents, err := os.ReadFile(scriptPath)
 	if err != nil {
-		return fmt.Errorf("Failed to read GRUB script at %s: %s", scriptPath, err)
+		return fmt.Errorf("failed to read GRUB script at %s: %s", scriptPath, err)
 	}
 
 	targetRootPath := filepath.Join(targetRoot, "/etc/grub.d", filepath.Base(scriptPath))
 	err = os.WriteFile(targetRootPath, contents, 0755) // Grub expects script to be executable
 	if err != nil {
-		return fmt.Errorf("Failed to writing GRUB script to %s: %s", targetRootPath, err)
+		return fmt.Errorf("failed to writing GRUB script to %s: %s", targetRootPath, err)
 	}
 
 	return nil
@@ -85,12 +84,12 @@ func RemoveGrubScript(targetRoot, scriptName string) error {
 
 	// Ensure script exists
 	if _, err := os.Stat(targetRootPath); os.IsNotExist(err) {
-		return fmt.Errorf("Error removing GRUB script: %s does not exist", targetRootPath)
+		return fmt.Errorf("error removing GRUB script: %s does not exist", targetRootPath)
 	}
 
 	err := os.Remove(targetRootPath)
 	if err != nil {
-		return fmt.Errorf("Error removing GRUB script: %s", err)
+		return fmt.Errorf("error removing GRUB script: %s", err)
 	}
 
 	return nil
@@ -104,7 +103,7 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 			targetBind := filepath.Join(targetRoot, bind)
 			err := RunCommand(fmt.Sprintf("mount --bind %s %s", bind, targetBind))
 			if err != nil {
-				return fmt.Errorf("Failed to mount %s to %s: %s", bind, targetRoot, err)
+				return fmt.Errorf("failed to mount %s to %s: %s", bind, targetRoot, err)
 			}
 		}
 	}
@@ -118,7 +117,7 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		err = RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
 	}
 	if err != nil {
-		return fmt.Errorf("Failed to run grub-install: %s", err)
+		return fmt.Errorf("failed to run grub-install: %s", err)
 	}
 
 	if targetRoot != "" {
@@ -129,16 +128,13 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 	// base, consider keeping it.
 	if target == EFI {
 		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=vanilla --loader=\"\\EFI\\debian\\shimx64.efi\""
-		diskExpr := regexp.MustCompile("^/dev/[a-zA-Z]+([0-9]+[a-z][0-9]+)?")
-		partExpr := regexp.MustCompile("[0-9]+$")
 		if len(efiDevice) == 0 || efiDevice[0] == "" {
 			return errors.New("EFI device was not specified")
 		}
-		diskName := diskExpr.FindString(efiDevice[0])
-		part := partExpr.FindString(efiDevice[0])
+		diskName, part := SeparateDiskPart(efiDevice[0])
 		err = RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
 		if err != nil {
-			return fmt.Errorf("Failed to run grub-install: %s", err)
+			return fmt.Errorf("failed to run grub-install: %s", err)
 		}
 	}
 

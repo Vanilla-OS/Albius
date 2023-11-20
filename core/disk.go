@@ -3,7 +3,6 @@ package albius
 import (
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"strconv"
 )
 
@@ -19,10 +18,12 @@ type Sector struct {
 }
 
 type Disk struct {
-	Path, Size, Model, Transport                         string
-	Label                                                DiskLabel
-	LogicalSectorSize, PhysicalSectorSize, MaxPartitions int
-	Partitions                                           []Partition
+	Path, Size, Model, Transport string
+	Label                        DiskLabel
+	LogicalSectorSize            int `json:"logical-sector-size"`
+	PhysicalSectorSize           int `json:"physical-sector-size"`
+	MaxPartitions                int `json:"max-partitions"`
+	Partitions                   []Partition
 }
 
 func (disk *Disk) AvailableSectors() ([]Sector, error) {
@@ -31,14 +32,14 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 	for i, part := range disk.Partitions {
 		endInt, err := strconv.Atoi(part.End[:len(part.End)-3])
 		if err != nil {
-			return []Sector{}, fmt.Errorf("Failed to retrieve end position of partition: %s", err)
+			return []Sector{}, fmt.Errorf("failed to retrieve end position of partition: %s", err)
 		}
 
 		if i < len(disk.Partitions)-1 {
 			nextStart := disk.Partitions[i+1].Start
 			nextStartInt, err := strconv.Atoi(nextStart[:len(nextStart)-3])
 			if err != nil {
-				return []Sector{}, fmt.Errorf("Failed to retrieve start position of next partition: %s", err)
+				return []Sector{}, fmt.Errorf("failed to retrieve start position of next partition: %s", err)
 			}
 
 			if endInt != nextStartInt {
@@ -51,11 +52,11 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 	lastPartitionEndStr := disk.Partitions[len(disk.Partitions)-1].End
 	lastPartitionEnd, err := strconv.Atoi(lastPartitionEndStr[:len(lastPartitionEndStr)-3])
 	if err != nil {
-		return []Sector{}, fmt.Errorf("Failed to retrieve end position of last partition: %s", err)
+		return []Sector{}, fmt.Errorf("failed to retrieve end position of last partition: %s", err)
 	}
 	diskEnd, err := strconv.Atoi(disk.Size[:len(disk.Size)-3])
 	if err != nil {
-		return []Sector{}, fmt.Errorf("Failed to retrieve disk end")
+		return []Sector{}, fmt.Errorf("failed to retrieve disk end")
 	}
 	if lastPartitionEnd < diskEnd {
 		sectors = append(sectors, Sector{lastPartitionEnd, diskEnd})
@@ -64,45 +65,28 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 	return sectors, nil
 }
 
-type LocateDiskOutput struct {
-	Disk Disk
-}
-
 func LocateDisk(diskname string) (*Disk, error) {
-	findPartitionCmd := "parted -sj %s unit MiB print | sed -r 's/^(\\s*)\"(.)/\\1\"\\U\\2/g' | sed -r 's/(\\S)-(\\S)/\\1\\U\\2/g'"
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(findPartitionCmd, diskname))
-	output, err := cmd.Output()
+	findPartitionCmd := "parted -sj %s unit MiB print"
+	output, err := OutputCommand(fmt.Sprintf(findPartitionCmd, diskname))
+	// If disk is unformatted, parted returns the expected json but also throws an error.
+	// We can assume we have all the necessary information if output isn't empty.
+	if err != nil && output == "" {
+		return nil, fmt.Errorf("failed to list disk: %s", err)
+	}
+
+	var decoded struct {
+		Disk Disk
+	}
+	err = json.Unmarshal([]byte(output), &decoded)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list disk: %s", err)
+		return nil, fmt.Errorf("could not find device %s", diskname)
 	}
 
-	var device *Disk
-	var decoded *LocateDiskOutput
-	err = json.Unmarshal(output, &decoded)
-	if err != nil {
-		// Try a different approach suitable for when the disk is unformatted
-		var decodedMap map[string]map[string]interface{}
-		err = json.Unmarshal(output, &decodedMap)
-		device := new(Disk)
-		for k, v := range decodedMap["Disk"] {
-			err := setField(device, k, v)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to decode parted output: %s", err)
-			}
-		}
-	} else {
-		device = &decoded.Disk
+	for i := 0; i < len(decoded.Disk.Partitions); i++ {
+		decoded.Disk.Partitions[i].FillPath(decoded.Disk.Path)
 	}
 
-	if device == nil {
-		return nil, fmt.Errorf("Could not find device %s", diskname)
-	}
-
-	for i := 0; i < len(device.Partitions); i++ {
-		device.Partitions[i].FillPath(device.Path)
-	}
-
-	return device, nil
+	return &decoded.Disk, nil
 }
 
 func (disk *Disk) Update() error {
@@ -127,14 +111,14 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
 	for _, part := range disk.Partitions {
-		if err := part.UmountPartition(); err != nil {
-			return fmt.Errorf("Failed to unmount partition %s: %s", part.Path, err)
+		if err := part.UnmountPartition(); err != nil {
+			return fmt.Errorf("failed to unmount partition %s: %s", part.Path, err)
 		}
 	}
 
 	err := RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
 	if err != nil {
-		return fmt.Errorf("Failed to label disk: %s", err)
+		return fmt.Errorf("failed to label disk: %s", err)
 	}
 
 	return nil
@@ -170,13 +154,13 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 
 	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, partName, fsType, start, endStr))
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create partition: %s", err)
+		return nil, fmt.Errorf("failed to create partition: %s", err)
 	}
 
 	// Update partition list because we made changes to the disk
 	err = target.Update()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create partition: %s", err)
+		return nil, fmt.Errorf("failed to create partition: %s", err)
 	}
 
 	newPartition := &target.Partitions[len(target.Partitions)-1]

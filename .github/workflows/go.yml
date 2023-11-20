@@ -74,4 +74,4 @@ jobs:
         prerelease: true
         name: "Continuous Build"
         files: |
-          /__w/vanilla-installer/albius.deb
+          /__w/Albius/albius.deb

@@ -81,7 +81,14 @@ func (part *Partition) Mountpoints() ([]string, error) {
 		return []string{}, fmt.Errorf("failed to list mountpoints for %s: %s", part.Path, err)
 	}
 
-	return strings.Split(output, "\n"), nil
+	mounts := []string{}
+	for _, mnt := range strings.Split(output, "\n") {
+		if mnt != "" {
+			mounts = append(mounts, mnt)
+		}
+	}
+
+	return mounts, nil
 }
 
 func (part *Partition) IsMounted() (bool, error) {

@@ -1,6 +1,7 @@
 package albius
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -12,15 +13,15 @@ import (
 
 // RunCommand executes a command in a subshell
 func RunCommand(command string) error {
+	stderr := new(bytes.Buffer)
+
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Stdout = os.Stdout
-	err := cmd.Run()
+	cmd.Stderr = stderr
 
+	err := cmd.Run()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return errors.New(string(exitErr.Stderr))
-		}
-		return err
+		return errors.New(stderr.String())
 	}
 
 	return nil

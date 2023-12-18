@@ -95,7 +95,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 *
 	 * **Accepts**:
 	 * - *Name* (`string`): The name for the partition.
-	 * - *FsType* (`string`): The filesystem for the partition. Can be either `btrfs`,
+	 * - *FsType* (`string`): The filesystem for the partition. Can be either `none`, `btrfs`,
 	 * `ext[2,3,4]`, `linux-swap`, `ntfs`\*, `reiserfs`\*, `udf`\*, or `xfs`\*. If FsType
 	 * is prefixed with `luks-` (e.g. `luks-btrfs`), the partition will be encrypted using LUKS2.
 	 * - *Start* (`int`): The start position on disk for the new partition (in MiB).
@@ -141,6 +141,9 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 				return err
 			}
 		} else { // Unencrypted partition
+			if fsType == "none" {
+				fsType = ""
+			}
 			_, err := disk.NewPartition(name, fsType, start, end)
 			if err != nil {
 				return err

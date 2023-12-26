@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -107,6 +108,26 @@ func (disk *Disk) Update() error {
 	return nil
 }
 
+// waitForNewPartition is called after creating a new partition in order to
+// ensure the system is aware of it before proceeding.
+func (disk *Disk) waitForNewPartition() error {
+	for {
+		output, err := OutputCommand(fmt.Sprintf("lsblk -nro NAME %s | wc -l", disk.Path))
+		if err != nil {
+			return err
+		}
+
+		count, err := strconv.Atoi(strings.TrimSpace(output))
+		if err != nil {
+			return err
+		}
+
+		if count-1 != len(disk.Partitions) {
+			return nil
+		}
+	}
+}
+
 func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
@@ -153,6 +174,12 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	}
 
 	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, partName, fsType, start, endStr))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create partition: %s", err)
+	}
+
+	// Wait until kernel is aware of new partition
+	err = target.waitForNewPartition()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create partition: %s", err)
 	}

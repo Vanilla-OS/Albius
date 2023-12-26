@@ -112,7 +112,7 @@ func (disk *Disk) Update() error {
 // ensure the system is aware of it before proceeding.
 func (disk *Disk) waitForNewPartition() error {
 	for {
-		output, err := OutputCommand("lsblk -nro NAME /dev/nvme0n1 | wc -l")
+		output, err := OutputCommand(fmt.Sprintf("lsblk -nro NAME /dev/%s | wc -l", disk.Path))
 		if err != nil {
 			return err
 		}

@@ -108,9 +108,15 @@ func (disk *Disk) Update() error {
 	return nil
 }
 
-// waitForNewPartition is called after creating a new partition in order to
+// waitForNewPartition should be called after creating a new partition to
+// inform the OS of changes to the partition table (using `partprobe`) and
 // ensure the system is aware of it before proceeding.
 func (disk *Disk) waitForNewPartition() error {
+	err := RunCommand(fmt.Sprintf("partprobe %s", disk.Path))
+	if err != nil {
+		return err
+	}
+
 	for {
 		output, err := OutputCommand(fmt.Sprintf("lsblk -nro NAME %s | wc -l", disk.Path))
 		if err != nil {

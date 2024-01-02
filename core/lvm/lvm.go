@@ -37,6 +37,18 @@ func Pvcreate(diskLabel string) error {
 		return fmt.Errorf("pvcreate: %v", err)
 	}
 
+	pvscanCache(diskLabel)
+
+	return nil
+}
+
+// pvscanCache runs the command `pvscan --cache [pv]` on the specified volume
+func pvscanCache(diskLabel string) error {
+	_, err := RunCommand("pvscan --cache %s", diskLabel)
+	if err != nil {
+		return fmt.Errorf("pvscanCache: %v", err)
+	}
+
 	return nil
 }
 

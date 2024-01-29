@@ -146,15 +146,28 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 		}
 	}
 
-	// Remove LVs
-	lvs, err := lvm.Lvs()
+	// Remove VGs and PVs belonging to disk
+	vgs, err := lvm.Vgs()
 	if err != nil {
-		return fmt.Errorf("failed to list lvs: %s", err)
+		return fmt.Errorf("failed to list vgs: %s", err)
 	}
-	for _, lv := range lvs {
-		err = lv.Remove()
+	pvsToRemove := []*lvm.Pv{}
+	for _, vg := range vgs {
+		for _, pv := range vg.Pvs {
+			if strings.Contains(pv.Path, disk.Path) {
+				pvsToRemove = append(pvsToRemove, &pv)
+				err = vg.Remove()
+				if err != nil {
+					return fmt.Errorf("failed to remove vg %s: %s", vg.Name, err)
+				}
+				break
+			}
+		}
+	}
+	for _, pv := range pvsToRemove {
+		err = pv.Remove()
 		if err != nil {
-			return fmt.Errorf("failed to remove lv %s: %s", lv.Name, err)
+			return fmt.Errorf("failed to remove pv %s: %s", pv.Path, err)
 		}
 	}
 

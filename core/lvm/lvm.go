@@ -133,6 +133,10 @@ func Pvremove(pv interface{}) error {
 		return fmt.Errorf("pvremove: %v", err)
 	}
 
+	for _, path := range pvPaths {
+		pvscanCache(path)
+	}
+
 	return nil
 }
 

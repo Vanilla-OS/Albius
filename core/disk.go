@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/vanilla-os/albius/core/lvm"
 )
 
 const (
@@ -137,13 +139,39 @@ func (disk *Disk) waitForNewPartition() error {
 func (disk *Disk) LabelDisk(label DiskLabel) error {
 	labelDiskCmd := "parted -s %s mklabel %s"
 
+	// Unmount partitions
 	for _, part := range disk.Partitions {
 		if err := part.UnmountPartition(); err != nil {
 			return fmt.Errorf("failed to unmount partition %s: %s", part.Path, err)
 		}
 	}
 
-	err := RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
+	// Remove VGs and PVs belonging to disk
+	vgs, err := lvm.Vgs()
+	if err != nil {
+		return fmt.Errorf("failed to list vgs: %s", err)
+	}
+	pvsToRemove := []*lvm.Pv{}
+	for _, vg := range vgs {
+		for _, pv := range vg.Pvs {
+			if strings.Contains(pv.Path, disk.Path) {
+				pvsToRemove = append(pvsToRemove, &pv)
+				err = vg.Remove()
+				if err != nil {
+					return fmt.Errorf("failed to remove vg %s: %s", vg.Name, err)
+				}
+				break
+			}
+		}
+	}
+	for _, pv := range pvsToRemove {
+		err = pv.Remove()
+		if err != nil {
+			return fmt.Errorf("failed to remove pv %s: %s", pv.Path, err)
+		}
+	}
+
+	err = RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
 	if err != nil {
 		return fmt.Errorf("failed to label disk: %s", err)
 	}

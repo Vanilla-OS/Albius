@@ -259,13 +259,19 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 	return newPartition, nil
 }
 
+// GetPartition attempts to locate a partition by its number. For instance, partition 3
+// will normally point to `/dev/sda3`, but this might not be the case if partitions have
+// been deleted (see [Issue #44]). This function first checks if the desired partition is
+// in the correct place, else it searches all partitions in target for the correct one.
+//
+// [Issue #44]: https://github.com/Vanilla-OS/Albius/issues/44
 func (target *Disk) GetPartition(partNum int) *Partition {
-    // Happy path
+    // Happy path: No partitions are missing
     if target.Partitions[partNum-1].Number == partNum {
         return &target.Partitions[partNum-1]
     }
 
-    // There are missing partition numbers, find partition manually
+    // Missing partition numbers, find correct partition manually
     for _, part := range target.Partitions {
         if part.Number == partNum {
             return &part

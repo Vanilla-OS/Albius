@@ -1,8 +1,10 @@
 package albius
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -88,6 +90,11 @@ func LocateDisk(diskname string) (*Disk, error) {
 	for i := 0; i < len(decoded.Disk.Partitions); i++ {
 		decoded.Disk.Partitions[i].FillPath(decoded.Disk.Path)
 	}
+
+    // Partitions may be unordered
+    slices.SortFunc(decoded.Disk.Partitions, func(a, b Partition) int {
+        return cmp.Compare(a.Number, b.Number)
+    })
 
 	return &decoded.Disk, nil
 }

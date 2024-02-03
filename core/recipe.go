@@ -161,7 +161,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.Partitions[partNum-1].RemovePartition()
+		err = disk.GetPartition(partNum).RemovePartition()
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.Partitions[partNum-1].ResizePartition(partNewSize)
+		err = disk.GetPartition(partNum).ResizePartition(partNewSize)
 		if err != nil {
 			return err
 		}
@@ -203,11 +203,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.Partitions[partNum-1].SetLabel(partNewName)
+		err = disk.GetPartition(partNum).SetLabel(partNewName)
 		if err != nil {
 			return err
 		}
-		err = disk.Partitions[partNum-1].NamePartition(partNewName)
+		err = disk.GetPartition(partNum).NamePartition(partNewName)
 		if err != nil {
 			return err
 		}
@@ -226,7 +226,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.Partitions[partNum-1].SetPartitionFlag(args[1].(string), args[2].(bool))
+		err = disk.GetPartition(partNum).SetPartitionFlag(args[1].(string), args[2].(bool))
 		if err != nil {
 			return err
 		}
@@ -245,14 +245,14 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			return err
 		}
 		filesystem := args[1].(string)
-		disk.Partitions[partNum-1].Filesystem = PartitionFs(filesystem)
-		err = MakeFs(&disk.Partitions[partNum-1])
+		disk.GetPartition(partNum).Filesystem = PartitionFs(filesystem)
+		err = MakeFs(disk.GetPartition(partNum))
 		if err != nil {
 			return err
 		}
 		if len(args) == 3 {
 			label := args[2].(string)
-			err := disk.Partitions[partNum-1].SetLabel(label)
+			err := disk.GetPartition(partNum).SetLabel(label)
 			if err != nil {
 				return err
 			}
@@ -274,9 +274,9 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		filesystem := args[1].(string)
 		password := args[2].(string)
-		part := disk.Partitions[partNum-1]
+		part := disk.GetPartition(partNum)
 		part.Filesystem = PartitionFs(filesystem)
-		err = LuksFormat(&part, password)
+		err = LuksFormat(part, password)
 		if err != nil {
 			return err
 		}
@@ -286,17 +286,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		for uuid == "" {
 			uuid, _ = part.GetUUID()
 		}
-		err = LuksOpen(&part, fmt.Sprintf("luks-%s", uuid), password)
+		err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
 			return err
 		}
-		err = LUKSMakeFs(&part)
+		err = LUKSMakeFs(part)
 		if err != nil {
 			return err
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
-			err := LUKSSetLabel(&part, label)
+			err := LUKSSetLabel(part, label)
 			if err != nil {
 				return err
 			}
@@ -942,7 +942,7 @@ func (recipe *Recipe) SetupMountpoints() error {
 			disk = diskCache[diskName]
 		}
 
-		err = disk.Partitions[part-1].Mount(baseRoot + mnt.Target)
+		err = disk.GetPartition(part).Mount(baseRoot + mnt.Target)
 		if err != nil {
 			return err
 		}

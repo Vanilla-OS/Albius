@@ -258,3 +258,19 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 
 	return newPartition, nil
 }
+
+func (target *Disk) GetPartition(partNum int) *Partition {
+    // Happy path
+    if target.Partitions[partNum-1].Number == partNum {
+        return &target.Partitions[partNum-1]
+    }
+
+    // There are missing partition numbers, find partition manually
+    for _, part := range target.Partitions {
+        if part.Number == partNum {
+            return &part
+        }
+    }
+
+    return nil
+}

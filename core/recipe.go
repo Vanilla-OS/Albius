@@ -123,9 +123,10 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			}
 			// lsblk seems to take a few milliseconds to update the partition's
 			// UUID, so we loop until it gives us one
-			uuid := ""
-			for uuid == "" {
-				uuid, _ = part.GetUUID()
+			part.WaitUntilAvailable()
+			uuid, err := part.GetUUID()
+			if err != nil {
+				return err
 			}
 			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
@@ -282,9 +283,10 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		// lsblk seems to take a few milliseconds to update the partition's
 		// UUID, so we loop until it gives us one
-		uuid := ""
-		for uuid == "" {
-			uuid, _ = part.GetUUID()
+		part.WaitUntilAvailable()
+		uuid, err := part.GetUUID()
+		if err != nil {
+			return err
 		}
 		err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
@@ -310,6 +312,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "pvcreate":
 		part := args[0].(string)
+		dummyPart := Partition{Path: part}
+		dummyPart.WaitUntilAvailable()
 		err := lvm.Pvcreate(part)
 		if err != nil {
 			return err
@@ -360,6 +364,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		pvs := []string{}
 		if len(args) > 1 {
 			for _, pv := range args[1].([]interface{}) {
+				dummyPart := Partition{Path: pv.(string)}
+				dummyPart.WaitUntilAvailable()
 				pvs = append(pvs, pv.(string))
 			}
 		}
@@ -585,9 +591,10 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		// lsblk seems to take a few milliseconds to update the partition's
 		// UUID, so we loop until it gives us one
-		uuid := ""
-		for uuid == "" {
-			uuid, _ = dummyPart.GetUUID()
+		dummyPart.WaitUntilAvailable()
+		uuid, err := dummyPart.GetUUID()
+		if err != nil {
+			return err
 		}
 		err = LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {

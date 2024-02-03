@@ -2,8 +2,10 @@ package albius
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"strings"
+	"time"
 )
 
 const (
@@ -290,4 +292,19 @@ func (part *Partition) SetLabel(label string) error {
 	}
 
 	return nil
+}
+
+// WaitUntilAvailable polls the specified partition until it is available.
+// This is particularly useful to make sure a recently created or modified
+// partition is recognized by the system.
+func (part *Partition) WaitUntilAvailable() {
+	for {
+		_, err := os.Stat(part.Path)
+		if !os.IsNotExist(err) {
+			if uuid, err := part.GetUUID(); err != nil && uuid != "" {
+				return
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 }

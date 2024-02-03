@@ -304,6 +304,11 @@ func (part *Partition) WaitUntilAvailable() {
 	for {
 		_, err := os.Stat(part.Path)
 		if !os.IsNotExist(err) {
+            // If Filesystem is not set, we're done
+            if part.Filesystem == "" {
+                return
+            }
+
 			if uuid, err := part.GetUUID(); err != nil && uuid != "" {
 				return
 			}

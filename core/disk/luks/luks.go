@@ -1,16 +1,23 @@
-package albius
+package disk
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/vanilla-os/albius/core/util"
 )
 
-func IsLuks(part *Partition) (bool, error) {
+type Partition interface {
+	GetUUID() (string, error)
+	GetPath() string
+}
+
+func IsLuks(part Partition) (bool, error) {
 	isLuksCmd := "cryptsetup isLuks %s"
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf(isLuksCmd, part.Path))
+	cmd := exec.Command("sh", "-c", fmt.Sprintf(isLuksCmd, part.GetPath()))
 	err := cmd.Run()
 	if err != nil {
 		// We expect the command to return exit status 1 if partition isn't LUKS-encrypted
@@ -18,20 +25,13 @@ func IsLuks(part *Partition) (bool, error) {
 			if exitError.ExitCode() == 1 {
 				return false, nil
 			} else {
-				return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.Path, string(exitError.Stderr))
+				return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.GetPath(), string(exitError.Stderr))
 			}
 		}
-		return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.Path, err)
+		return false, fmt.Errorf("failed to check if %s is LUKS-encrypted: %s", part.GetPath(), err)
 	}
 
 	return true, nil
-}
-
-func IsPathLuks(path string) (bool, error) {
-	dummyPartition := Partition{}
-	dummyPartition.Path = path
-
-	return IsLuks(&dummyPartition)
 }
 
 // LuksOpen opens a LUKS-encrypted partition, mapping the unencrypted filesystem
@@ -42,7 +42,7 @@ func IsPathLuks(path string) (bool, error) {
 //
 // WARNING: This function will return an error if mapping already exists, use
 // LuksTryOpen() to open a device while ignoring existing mappings
-func LuksOpen(part *Partition, mapping, password string) error {
+func LuksOpen(part Partition, mapping, password string) error {
 	var luksOpenCmd string
 	if password != "" {
 		luksOpenCmd = fmt.Sprintf("echo '%s' | ", password)
@@ -52,7 +52,7 @@ func LuksOpen(part *Partition, mapping, password string) error {
 
 	luksOpenCmd += "cryptsetup open %s %s"
 
-	err := RunCommand(fmt.Sprintf(luksOpenCmd, part.Path, mapping))
+	err := util.RunCommand(fmt.Sprintf(luksOpenCmd, part.GetPath(), mapping))
 	if err != nil {
 		return fmt.Errorf("failed to open LUKS-encrypted partition: %s", err)
 	}
@@ -68,7 +68,7 @@ func LuksOpen(part *Partition, mapping, password string) error {
 // open.
 //
 // The function still returns other errors, however.
-func LuksTryOpen(part *Partition, mapping, password string) error {
+func LuksTryOpen(part Partition, mapping, password string) error {
 	_, err := os.Stat(fmt.Sprintf("/dev/mapper/%s", mapping))
 	if err == nil { // Mapping exists, do nothing
 		return nil
@@ -82,7 +82,7 @@ func LuksTryOpen(part *Partition, mapping, password string) error {
 func LuksClose(mapping string) error {
 	luksCloseCmd := "cryptsetup close %s"
 
-	err := RunCommand(fmt.Sprintf(luksCloseCmd, mapping))
+	err := util.RunCommand(fmt.Sprintf(luksCloseCmd, mapping))
 	if err != nil {
 		return fmt.Errorf("failed to close LUKS-encrypted partition: %s", err)
 	}
@@ -90,10 +90,10 @@ func LuksClose(mapping string) error {
 	return nil
 }
 
-func LuksFormat(part *Partition, password string) error {
+func LuksFormat(part Partition, password string) error {
 	luksFormatCmd := "echo '%s' | cryptsetup -q luksFormat %s"
 
-	err := RunCommand(fmt.Sprintf(luksFormatCmd, password, part.Path))
+	err := util.RunCommand(fmt.Sprintf(luksFormatCmd, password, part.GetPath()))
 	if err != nil {
 		return fmt.Errorf("failed to create LUKS-encrypted partition: %s", err)
 	}
@@ -122,40 +122,10 @@ func GenCrypttab(targetRoot string, entries [][]string) error {
 
 func GetLUKSFilesystemByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -n -o FSTYPE %s | sed '/crypto_LUKS/d'"
-	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
+	output, err := util.OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get encrypted partition FSTYPE: %s", err)
 	}
 
 	return output, nil
-}
-
-// LUKSMakeFs creates a filesystem inside of a LUKS-formatted partition. Use
-// this instead of MakeFs when setting up encrypted filesystems.
-func LUKSMakeFs(part *Partition) error {
-	innerPartition := Partition{}
-
-	partUUID, err := part.GetUUID()
-	if err != nil {
-		return err
-	}
-	innerPartition.Path = fmt.Sprintf("/dev/mapper/luks-%s", partUUID)
-	innerPartition.Filesystem = part.Filesystem
-
-	return MakeFs(&innerPartition)
-}
-
-// LUKSSetLabel labels a LUKS-formatted partition. Use this instead of SetLabel
-// when setting up encrypted filesystems.
-func LUKSSetLabel(part *Partition, name string) error {
-	innerPartition := Partition{}
-
-	partUUID, err := part.GetUUID()
-	if err != nil {
-		return err
-	}
-	innerPartition.Path = fmt.Sprintf("/dev/mapper/luks-%s", partUUID)
-	innerPartition.Filesystem = part.Filesystem
-
-	return innerPartition.SetLabel(name)
 }

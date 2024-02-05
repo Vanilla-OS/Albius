@@ -27,7 +27,7 @@ jobs:
 
     - name: Build debian package
       run: |
-        dpkg-buildpackage --no-sign
+        make deb
         mv ../*.deb ../albius.deb
 
     - uses: softprops/action-gh-release@v1

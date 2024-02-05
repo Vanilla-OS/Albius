@@ -31,7 +31,9 @@ done
 dd if=/dev/zero of="$output" bs=1024 count="$size" > /dev/null 2>&1
 device=$(losetup --find --show "$output")
 
-parted -s "$device" mklabel gpt
+if [ ${#partitions[@]} != 0 ]; then
+    parted -s "$device" mklabel gpt
+fi
 
 for partition in "${partitions[@]}"; do
     IFS=";" read -r -a args <<< "${partition}"

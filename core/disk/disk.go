@@ -1,14 +1,16 @@
-package albius
+package disk
 
 import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/vanilla-os/albius/core/lvm"
+	"github.com/vanilla-os/albius/core/util"
 )
 
 const (
@@ -72,7 +74,7 @@ func (disk *Disk) AvailableSectors() ([]Sector, error) {
 
 func LocateDisk(diskname string) (*Disk, error) {
 	findPartitionCmd := "parted -sj %s unit MiB print"
-	output, err := OutputCommand(fmt.Sprintf(findPartitionCmd, diskname))
+	output, err := util.OutputCommand(fmt.Sprintf(findPartitionCmd, diskname))
 	// If disk is unformatted, parted returns the expected json but also throws an error.
 	// We can assume we have all the necessary information if output isn't empty.
 	if err != nil && output == "" {
@@ -91,10 +93,10 @@ func LocateDisk(diskname string) (*Disk, error) {
 		decoded.Disk.Partitions[i].FillPath(decoded.Disk.Path)
 	}
 
-    // Partitions may be unordered
-    slices.SortFunc(decoded.Disk.Partitions, func(a, b Partition) int {
-        return cmp.Compare(a.Number, b.Number)
-    })
+	// Partitions may be unordered
+	slices.SortFunc(decoded.Disk.Partitions, func(a, b Partition) int {
+		return cmp.Compare(a.Number, b.Number)
+	})
 
 	return &decoded.Disk, nil
 }
@@ -121,13 +123,13 @@ func (disk *Disk) Update() error {
 // inform the OS of changes to the partition table (using `partprobe`) and
 // ensure the system is aware of it before proceeding.
 func (disk *Disk) waitForNewPartition() error {
-	err := RunCommand(fmt.Sprintf("partprobe %s", disk.Path))
+	err := util.RunCommand(fmt.Sprintf("partprobe %s", disk.Path))
 	if err != nil {
 		return err
 	}
 
 	for {
-		output, err := OutputCommand(fmt.Sprintf("lsblk -nro NAME %s | wc -l", disk.Path))
+		output, err := util.OutputCommand(fmt.Sprintf("lsblk -nro NAME %s | wc -l", disk.Path))
 		if err != nil {
 			return err
 		}
@@ -178,7 +180,7 @@ func (disk *Disk) LabelDisk(label DiskLabel) error {
 		}
 	}
 
-	err = RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
+	err = util.RunCommand(fmt.Sprintf(labelDiskCmd, disk.Path, label))
 	if err != nil {
 		return fmt.Errorf("failed to label disk: %s", err)
 	}
@@ -214,7 +216,7 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 		partName = fmt.Sprintf(" \"%s\"", name)
 	}
 
-	err := RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, partName, fsType, start, endStr))
+	err := util.RunCommand(fmt.Sprintf(createPartCmd, target.Path, partType, partName, fsType, start, endStr))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create partition: %s", err)
 	}
@@ -266,17 +268,49 @@ func (target *Disk) NewPartition(name string, fsType PartitionFs, start, end int
 //
 // [Issue #44]: https://github.com/Vanilla-OS/Albius/issues/44
 func (target *Disk) GetPartition(partNum int) *Partition {
-    // Happy path: No partitions are missing
-    if target.Partitions[partNum-1].Number == partNum {
-        return &target.Partitions[partNum-1]
-    }
+	// Happy path: No partitions are missing
+	if target.Partitions[partNum-1].Number == partNum {
+		return &target.Partitions[partNum-1]
+	}
 
-    // Missing partition numbers, find correct partition manually
-    for _, part := range target.Partitions {
-        if part.Number == partNum {
-            return &part
-        }
-    }
+	// Missing partition numbers, find correct partition manually
+	for _, part := range target.Partitions {
+		if part.Number == partNum {
+			return &part
+		}
+	}
 
-    return nil
+	return nil
+}
+
+func setField(obj interface{}, name string, value interface{}) error {
+	structValue := reflect.ValueOf(obj).Elem()
+	structFieldValue := structValue.FieldByName(name)
+
+	if !structFieldValue.IsValid() {
+		return fmt.Errorf("no such field: %s in obj", name)
+	}
+
+	if !structFieldValue.CanSet() {
+		return fmt.Errorf("cannot set %s field value", name)
+	}
+
+	structFieldType := structFieldValue.Type()
+	val := reflect.ValueOf(value)
+	var convertedVal reflect.Value
+	if structFieldType != val.Type() {
+		// Type conversions
+		if structFieldType.Kind() == reflect.Int && val.Type().Kind() == reflect.Float64 {
+			convertedVal = reflect.ValueOf(int(val.Interface().(float64)))
+		} else if structFieldType.Name() == "DiskLabel" && val.Type().Kind() == reflect.String {
+			convertedVal = reflect.ValueOf(DiskLabel(val.Interface().(string)))
+		} else {
+			return fmt.Errorf("provided value type for %s did not match obj field type. Expected %v, got %v", name, structFieldType, val.Type())
+		}
+	} else {
+		convertedVal = val
+	}
+
+	structFieldValue.Set(convertedVal)
+	return nil
 }

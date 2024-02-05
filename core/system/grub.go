@@ -1,4 +1,4 @@
-package albius
+package system
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/vanilla-os/albius/core/util"
 )
 
 type GrubConfig map[string]string
@@ -51,7 +53,7 @@ func WriteGrubConfig(targetRoot string, config GrubConfig) error {
 	}
 
 	targetRootGrubFile := filepath.Join(targetRoot, "/etc/default/grub")
-	err := os.WriteFile(targetRootGrubFile, fileContents, 0644)
+	err := os.WriteFile(targetRootGrubFile, fileContents, 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to write GRUB config file: %s", err)
 	}
@@ -71,7 +73,7 @@ func AddGrubScript(targetRoot, scriptPath string) error {
 	}
 
 	targetRootPath := filepath.Join(targetRoot, "/etc/grub.d", filepath.Base(scriptPath))
-	err = os.WriteFile(targetRootPath, contents, 0755) // Grub expects script to be executable
+	err = os.WriteFile(targetRootPath, contents, 0o755) // Grub expects script to be executable
 	if err != nil {
 		return fmt.Errorf("failed to writing GRUB script to %s: %s", targetRootPath, err)
 	}
@@ -101,7 +103,7 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		requiredBinds := []string{"/dev", "/dev/pts", "/proc", "/sys", "/run"}
 		for _, bind := range requiredBinds {
 			targetBind := filepath.Join(targetRoot, bind)
-			err := RunCommand(fmt.Sprintf("mount --bind %s %s", bind, targetBind))
+			err := util.RunCommand(fmt.Sprintf("mount --bind %s %s", bind, targetBind))
 			if err != nil {
 				return fmt.Errorf("failed to mount %s to %s: %s", bind, targetRoot, err)
 			}
@@ -112,9 +114,9 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 
 	var err error
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
 	} else {
-		err = RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+		err = util.RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to run grub-install: %s", err)
@@ -131,8 +133,8 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		if len(efiDevice) == 0 || efiDevice[0] == "" {
 			return errors.New("EFI device was not specified")
 		}
-		diskName, part := SeparateDiskPart(efiDevice[0])
-		err = RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
+		diskName, part := util.SeparateDiskPart(efiDevice[0])
+		err = util.RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
 		if err != nil {
 			return fmt.Errorf("failed to run grub-install: %s", err)
 		}
@@ -146,9 +148,9 @@ func RunGrubMkconfig(targetRoot, output string) error {
 
 	var err error
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(grubMkconfigCmd, output))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(grubMkconfigCmd, output))
 	} else {
-		err = RunCommand(fmt.Sprintf(grubMkconfigCmd, output))
+		err = util.RunCommand(fmt.Sprintf(grubMkconfigCmd, output))
 	}
 	if err != nil {
 		return err

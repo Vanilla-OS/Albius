@@ -9,7 +9,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/vanilla-os/albius/core/disk"
+	luks "github.com/vanilla-os/albius/core/disk/luks"
 	"github.com/vanilla-os/albius/core/lvm"
+	"github.com/vanilla-os/albius/core/system"
+	"github.com/vanilla-os/albius/core/util"
 )
 
 const (
@@ -69,7 +73,7 @@ func ReadRecipe(path string) (*Recipe, error) {
 }
 
 func runSetupOperation(diskLabel, operation string, args []interface{}) error {
-	disk, err := LocateDisk(diskLabel)
+	target, err := disk.LocateDisk(diskLabel)
 	if err != nil {
 		return err
 	}
@@ -84,8 +88,8 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *LabelType* (`string`): The partitioning scheme. Either `mbr` or `gpt`.
 	 */
 	case "label":
-		label := DiskLabel(args[0].(string))
-		err = disk.LabelDisk(label)
+		label := disk.DiskLabel(args[0].(string))
+		err = target.LabelDisk(label)
 		if err != nil {
 			return err
 		}
@@ -108,16 +112,16 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "mkpart":
 		name := args[0].(string)
-		fsType := PartitionFs(args[1].(string))
+		fsType := disk.PartitionFs(args[1].(string))
 		start := int(args[2].(float64))
 		end := int(args[3].(float64))
 		if len(args) > 4 && strings.HasPrefix(string(fsType), "luks-") { // Encrypted partition
 			luksPassword := args[4].(string)
-			part, err := disk.NewPartition(name, "", start, end)
+			part, err := target.NewPartition(name, "", start, end)
 			if err != nil {
 				return err
 			}
-			err = LuksFormat(part, luksPassword)
+			err = luks.LuksFormat(part, luksPassword)
 			if err != nil {
 				return err
 			}
@@ -128,16 +132,16 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			if err != nil {
 				return err
 			}
-			err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
+			err = luks.LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
 				return err
 			}
-			part.Filesystem = PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
-			err = LUKSMakeFs(part)
+			part.Filesystem = disk.PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
+			err = disk.LUKSMakeFs(*part)
 			if err != nil {
 				return err
 			}
-			err = LUKSSetLabel(part, name)
+			err = disk.LUKSSetLabel(part, name)
 			if err != nil {
 				return err
 			}
@@ -145,7 +149,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			if fsType == "none" {
 				fsType = ""
 			}
-			_, err := disk.NewPartition(name, fsType, start, end)
+			_, err := target.NewPartition(name, fsType, start, end)
 			if err != nil {
 				return err
 			}
@@ -162,7 +166,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.GetPartition(partNum).RemovePartition()
+		err = target.GetPartition(partNum).RemovePartition()
 		if err != nil {
 			return err
 		}
@@ -183,7 +187,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.GetPartition(partNum).ResizePartition(partNewSize)
+		err = target.GetPartition(partNum).ResizePartition(partNewSize)
 		if err != nil {
 			return err
 		}
@@ -204,11 +208,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.GetPartition(partNum).SetLabel(partNewName)
+		err = target.GetPartition(partNum).SetLabel(partNewName)
 		if err != nil {
 			return err
 		}
-		err = disk.GetPartition(partNum).NamePartition(partNewName)
+		err = target.GetPartition(partNum).NamePartition(partNewName)
 		if err != nil {
 			return err
 		}
@@ -227,7 +231,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = disk.GetPartition(partNum).SetPartitionFlag(args[1].(string), args[2].(bool))
+		err = target.GetPartition(partNum).SetPartitionFlag(args[1].(string), args[2].(bool))
 		if err != nil {
 			return err
 		}
@@ -246,14 +250,14 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			return err
 		}
 		filesystem := args[1].(string)
-		disk.GetPartition(partNum).Filesystem = PartitionFs(filesystem)
-		err = MakeFs(disk.GetPartition(partNum))
+		target.GetPartition(partNum).Filesystem = disk.PartitionFs(filesystem)
+		err = disk.MakeFs(target.GetPartition(partNum))
 		if err != nil {
 			return err
 		}
 		if len(args) == 3 {
 			label := args[2].(string)
-			err := disk.GetPartition(partNum).SetLabel(label)
+			err := target.GetPartition(partNum).SetLabel(label)
 			if err != nil {
 				return err
 			}
@@ -275,9 +279,9 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		filesystem := args[1].(string)
 		password := args[2].(string)
-		part := disk.GetPartition(partNum)
-		part.Filesystem = PartitionFs(filesystem)
-		err = LuksFormat(part, password)
+		part := target.GetPartition(partNum)
+		part.Filesystem = disk.PartitionFs(filesystem)
+		err = luks.LuksFormat(part, password)
 		if err != nil {
 			return err
 		}
@@ -288,17 +292,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = LuksOpen(part, fmt.Sprintf("luks-%s", uuid), password)
+		err = luks.LuksOpen(part, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
 			return err
 		}
-		err = LUKSMakeFs(part)
+		err = disk.LUKSMakeFs(*part)
 		if err != nil {
 			return err
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
-			err := LUKSSetLabel(part, label)
+			err := disk.LUKSSetLabel(part, label)
 			if err != nil {
 				return err
 			}
@@ -312,7 +316,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 */
 	case "pvcreate":
 		part := args[0].(string)
-		dummyPart := Partition{Path: part}
+		dummyPart := disk.Partition{Path: part}
 		dummyPart.WaitUntilAvailable()
 		err := lvm.Pvcreate(part)
 		if err != nil {
@@ -364,7 +368,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		pvs := []string{}
 		if len(args) > 1 {
 			for _, pv := range args[1].([]interface{}) {
-				dummyPart := Partition{Path: pv.(string)}
+				dummyPart := disk.Partition{Path: pv.(string)}
 				dummyPart.WaitUntilAvailable()
 				pvs = append(pvs, pv.(string))
 			}
@@ -548,11 +552,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		dummyPart := Partition{
+		dummyPart := disk.Partition{
 			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
-			Filesystem: PartitionFs(filesystem),
+			Filesystem: disk.PartitionFs(filesystem),
 		}
-		err = MakeFs(&dummyPart)
+		err = disk.MakeFs(&dummyPart)
 		if err != nil {
 			return err
 		}
@@ -581,11 +585,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		dummyPart := Partition{
+		dummyPart := disk.Partition{
 			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
-			Filesystem: PartitionFs(filesystem),
+			Filesystem: disk.PartitionFs(filesystem),
 		}
-		err = LuksFormat(&dummyPart, password)
+		err = luks.LuksFormat(&dummyPart, password)
 		if err != nil {
 			return err
 		}
@@ -596,17 +600,17 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return err
 		}
-		err = LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
+		err = luks.LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
 			return err
 		}
-		err = LUKSMakeFs(&dummyPart)
+		err = disk.LUKSMakeFs(dummyPart)
 		if err != nil {
 			return err
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
-			err := LUKSSetLabel(&dummyPart, label)
+			err := disk.LUKSSetLabel(&dummyPart, label)
 			if err != nil {
 				return err
 			}
@@ -660,9 +664,9 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		var err error
 		if len(args) == 4 {
 			password := args[3].(string)
-			err = AddUser(targetRoot, username, fullname, groups, password)
+			err = system.AddUser(targetRoot, username, fullname, groups, password)
 		} else {
-			err = AddUser(targetRoot, username, fullname, groups)
+			err = system.AddUser(targetRoot, username, fullname, groups)
 		}
 		if err != nil {
 			return err
@@ -676,7 +680,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 */
 	case "timezone":
 		tz := args[0].(string)
-		err := SetTimezone(targetRoot, tz)
+		err := system.SetTimezone(targetRoot, tz)
 		if err != nil {
 			return err
 		}
@@ -692,9 +696,9 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			command := arg.(string)
 			var err error
 			if chroot {
-				err = RunInChroot(targetRoot, command)
+				err = util.RunInChroot(targetRoot, command)
 			} else {
-				err = RunCommand(command)
+				err = util.RunCommand(command)
 			}
 			if err != nil {
 				return err
@@ -711,7 +715,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "pkgremove":
 		pkgRemovePath := args[0].(string)
 		removeCmd := args[1].(string)
-		err := RemovePackages(targetRoot, pkgRemovePath, removeCmd)
+		err := system.RemovePackages(targetRoot, pkgRemovePath, removeCmd)
 		if err != nil {
 			return err
 		}
@@ -724,7 +728,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 */
 	case "hostname":
 		newHostname := args[0].(string)
-		err := ChangeHostname(targetRoot, newHostname)
+		err := system.ChangeHostname(targetRoot, newHostname)
 		if err != nil {
 			return err
 		}
@@ -737,7 +741,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 */
 	case "locale":
 		localeCode := args[0].(string)
-		err := SetLocale(targetRoot, localeCode)
+		err := system.SetLocale(targetRoot, localeCode)
 		if err != nil {
 			return err
 		}
@@ -750,7 +754,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 */
 	case "swapon":
 		partition := args[0].(string)
-		err := Swapon(targetRoot, partition)
+		err := system.Swapon(targetRoot, partition)
 		if err != nil {
 			return err
 		}
@@ -767,7 +771,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		layout := args[0].(string)
 		model := args[1].(string)
 		variant := args[2].(string)
-		err := SetKeyboardLayout(targetRoot, layout, model, variant)
+		err := system.SetKeyboardLayout(targetRoot, layout, model, variant)
 		if err != nil {
 			return err
 		}
@@ -789,16 +793,16 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if len(args) > 3 {
 			efiDevice = args[3].(string)
 		}
-		var grubTarget FirmwareType
+		var grubTarget system.FirmwareType
 		switch target {
 		case "bios":
-			grubTarget = BIOS
+			grubTarget = system.BIOS
 		case "efi":
-			grubTarget = EFI
+			grubTarget = system.EFI
 		default:
 			return fmt.Errorf("failed to execute operation: %s: Unrecognized firmware type: '%s')", operation, target)
 		}
-		err := RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, efiDevice)
+		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, efiDevice)
 		if err != nil {
 			return err
 		}
@@ -810,7 +814,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * - *KV(s)* (`...string`): The `KEY=value` pair(s) to add to the GRUB default file.
 	 */
 	case "grub-default-config":
-		currentConfig, err := GetGrubConfig(targetRoot)
+		currentConfig, err := system.GetGrubConfig(targetRoot)
 		if err != nil {
 			return err
 		}
@@ -818,7 +822,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			kv := strings.SplitN(arg.(string), "=", 2)
 			currentConfig[kv[0]] = kv[1]
 		}
-		err = WriteGrubConfig(targetRoot, currentConfig)
+		err = system.WriteGrubConfig(targetRoot, currentConfig)
 		if err != nil {
 			return err
 		}
@@ -832,7 +836,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "grub-add-script":
 		for _, arg := range args {
 			scriptPath := arg.(string)
-			err := AddGrubScript(targetRoot, scriptPath)
+			err := system.AddGrubScript(targetRoot, scriptPath)
 			if err != nil {
 				return err
 			}
@@ -847,7 +851,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "grub-remove-script":
 		for _, arg := range args {
 			scriptName := arg.(string)
-			err := RemoveGrubScript(targetRoot, scriptName)
+			err := system.RemoveGrubScript(targetRoot, scriptName)
 			if err != nil {
 				return err
 			}
@@ -861,7 +865,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 */
 	case "grub-mkconfig":
 		outputPath := args[0].(string)
-		err := RunGrubMkconfig(targetRoot, outputPath)
+		err := system.RunGrubMkconfig(targetRoot, outputPath)
 		if err != nil {
 			return err
 		}
@@ -885,7 +889,7 @@ func (recipe *Recipe) RunPostInstall() error {
 }
 
 func (recipe *Recipe) SetupMountpoints() error {
-	diskCache := map[string]*Disk{}
+	diskCache := map[string]*disk.Disk{}
 	rootAMounted := false
 
 	/* We need to mount the partitions in order to prevent one mountpoint
@@ -921,7 +925,7 @@ func (recipe *Recipe) SetupMountpoints() error {
 
 		// LVM partition
 		if lvmExpr.MatchString(mnt.Partition) {
-			lvmPartition := Partition{
+			lvmPartition := disk.Partition{
 				Number: -1,
 				Path:   mnt.Partition,
 			}
@@ -933,23 +937,23 @@ func (recipe *Recipe) SetupMountpoints() error {
 		}
 
 		// Regular partition
-		diskName, partName := SeparateDiskPart(mnt.Partition)
+		diskName, partName := util.SeparateDiskPart(mnt.Partition)
 		part, err := strconv.Atoi(partName)
 		if err != nil {
 			return err
 		}
 
-		disk, ok := diskCache[diskName]
+		target, ok := diskCache[diskName]
 		if !ok {
-			diskPtr, err := LocateDisk(diskName)
+			diskPtr, err := disk.LocateDisk(diskName)
 			if err != nil {
 				return err
 			}
 			diskCache[diskName] = diskPtr
-			disk = diskCache[diskName]
+			target = diskCache[diskName]
 		}
 
-		err = disk.GetPartition(part).Mount(baseRoot + mnt.Target)
+		err = target.GetPartition(part).Mount(baseRoot + mnt.Target)
 		if err != nil {
 			return err
 		}
@@ -963,27 +967,29 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 	for _, mnt := range recipe.Mountpoints {
 		entry := []string{}
 
-		uuid, err := GetUUIDByPath(mnt.Partition)
+		uuid, err := disk.GetUUIDByPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
 
 		// Partition fstype
-		fstype, err := GetFilesystemByPath(mnt.Partition)
+		fstype, err := disk.GetFilesystemByPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
 
 		// If partition is LUKS-encrypted, use /dev/mapper/xxxx, otherwise
 		// use the partition's UUID
+		dummyPart := disk.Partition{Path: mnt.Partition}
+
 		var fsName string
-		luks, err := IsPathLuks(mnt.Partition)
+		isLuks, err := luks.IsLuks(&dummyPart)
 		if err != nil {
 			return [][]string{}, err
 		}
-		if luks {
+		if isLuks {
 			fsName = fmt.Sprintf("/dev/mapper/luks-%s", uuid)
-			encryptedFstype, err := GetLUKSFilesystemByPath(mnt.Partition)
+			encryptedFstype, err := luks.GetLUKSFilesystemByPath(mnt.Partition)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -1013,17 +1019,18 @@ func (recipe *Recipe) setupFstabEntries() ([][]string, error) {
 func (recipe *Recipe) setupCrypttabEntries() ([][]string, error) {
 	crypttabEntries := [][]string{}
 	for _, mnt := range recipe.Mountpoints {
-		luks, err := IsPathLuks(mnt.Partition)
+		dummyPart := disk.Partition{Path: mnt.Partition}
+		isLuks, err := luks.IsLuks(&dummyPart)
 		if err != nil {
 			return [][]string{}, err
 		}
-		if !luks {
+		if !isLuks {
 			continue
 		}
 
 		entry := []string{}
 
-		partUUID, err := GetUUIDByPath(mnt.Partition)
+		partUUID, err := disk.GetUUIDByPath(mnt.Partition)
 		if err != nil {
 			return [][]string{}, err
 		}
@@ -1044,9 +1051,9 @@ func (recipe *Recipe) Install() error {
 	var err error
 	switch recipe.Installation.Method {
 	case UNSQUASHFS:
-		err = Unsquashfs(recipe.Installation.Source, RootA, true)
+		err = disk.Unsquashfs(recipe.Installation.Source, RootA, true)
 	case OCI:
-		err = OCISetup(recipe.Installation.Source, filepath.Join(RootA, "var"), RootA, false)
+		err = disk.OCISetup(recipe.Installation.Source, filepath.Join(RootA, "var"), RootA, false)
 	default:
 		return fmt.Errorf("unsupported installation method '%s'", recipe.Installation.Method)
 	}
@@ -1060,7 +1067,7 @@ func (recipe *Recipe) Install() error {
 		return fmt.Errorf("failed to generate crypttab entries: %s", err)
 	}
 	if len(crypttabEntries) > 0 {
-		err = GenCrypttab(RootA, crypttabEntries)
+		err = luks.GenCrypttab(RootA, crypttabEntries)
 		if err != nil {
 			return fmt.Errorf("failed to generate crypttab: %s", err)
 		}
@@ -1071,28 +1078,28 @@ func (recipe *Recipe) Install() error {
 	if err != nil {
 		return fmt.Errorf("failed to generate fstab entries: %s", err)
 	}
-	err = GenFstab(RootA, fstabEntries)
+	err = disk.GenFstab(RootA, fstabEntries)
 	if err != nil {
 		return fmt.Errorf("failed to generate fstab: %s", err)
 	}
 
 	// Initramfs pre-scripts
 	for _, preCmd := range recipe.Installation.InitramfsPre {
-		err := RunInChroot(RootA, preCmd)
+		err := util.RunInChroot(RootA, preCmd)
 		if err != nil {
 			return fmt.Errorf("initramfs pre-script '%s' failed: %s", preCmd, err)
 		}
 	}
 
 	// Update Initramfs
-	err = UpdateInitramfs(RootA)
+	err = disk.UpdateInitramfs(RootA)
 	if err != nil {
 		return fmt.Errorf("failed to update initramfs: %s", err)
 	}
 
 	// Initramfs post-scripts
 	for _, postCmd := range recipe.Installation.InitramfsPost {
-		err := RunInChroot(RootA, postCmd)
+		err := util.RunInChroot(RootA, postCmd)
 		if err != nil {
 			return fmt.Errorf("initramfs post-script '%s' failed: %s", postCmd, err)
 		}

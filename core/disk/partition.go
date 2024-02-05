@@ -1,4 +1,4 @@
-package albius
+package disk
 
 import (
 	"fmt"
@@ -6,6 +6,9 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	luks "github.com/vanilla-os/albius/core/disk/luks"
+	"github.com/vanilla-os/albius/core/util"
 )
 
 const (
@@ -36,16 +39,16 @@ func (part *Partition) Mount(location string) error {
 	var mountPath string
 
 	// If it's a LUKS-encrypted partition, open it first
-	luks, err := IsLuks(part)
+	isLuks, err := luks.IsLuks(part)
 	if err != nil {
 		return err
 	}
-	if luks {
+	if isLuks {
 		partUUID, err := part.GetUUID()
 		if err != nil {
 			return err
 		}
-		err = LuksTryOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
+		err = luks.LuksTryOpen(part, fmt.Sprintf("luks-%s", partUUID), "")
 		if err != nil {
 			return err
 		}
@@ -68,7 +71,7 @@ func (part *Partition) Mount(location string) error {
 	}
 
 	mountCmd := "mount -m %s %s"
-	err = RunCommand(fmt.Sprintf(mountCmd, mountPath, location))
+	err = util.RunCommand(fmt.Sprintf(mountCmd, mountPath, location))
 	if err != nil {
 		return fmt.Errorf("failed to run mount command: %s", err)
 	}
@@ -76,9 +79,13 @@ func (part *Partition) Mount(location string) error {
 	return nil
 }
 
+func (part *Partition) GetPath() string {
+	return part.Path
+}
+
 func (part *Partition) Mountpoints() ([]string, error) {
 	mountpointsCmd := "lsblk -n -o MOUNTPOINTS %s"
-	output, err := OutputCommand(fmt.Sprintf(mountpointsCmd, part.Path))
+	output, err := util.OutputCommand(fmt.Sprintf(mountpointsCmd, part.Path))
 	if err != nil {
 		return []string{}, fmt.Errorf("failed to list mountpoints for %s: %s", part.Path, err)
 	}
@@ -115,16 +122,16 @@ func (part *Partition) UnmountPartition() error {
 	}
 
 	// Pass unmount operation to cryptsetup if it's a LUKS-encrypted partition
-	luks, err := IsLuks(part)
+	isLuks, err := luks.IsLuks(part)
 	if err != nil {
 		return err
 	}
-	if luks {
+	if isLuks {
 		partUUID, err := part.GetUUID()
 		if err != nil {
 			return err
 		}
-		err = LuksClose(fmt.Sprintf("luks-%s", partUUID))
+		err = luks.LuksClose(fmt.Sprintf("luks-%s", partUUID))
 		if err != nil {
 			return err
 		}
@@ -138,7 +145,7 @@ func (part *Partition) UnmountPartition() error {
 	}
 
 	umountCmd := "umount %s"
-	err = RunCommand(fmt.Sprintf(umountCmd, mountTarget))
+	err = util.RunCommand(fmt.Sprintf(umountCmd, mountTarget))
 	if err != nil {
 		return fmt.Errorf("failed to run umount command: %s", err)
 	}
@@ -149,7 +156,7 @@ func (part *Partition) UnmountPartition() error {
 func UnmountDirectory(dir string) error {
 	umountCmd := "umount %s"
 
-	err := RunCommand(fmt.Sprintf(umountCmd, dir))
+	err := util.RunCommand(fmt.Sprintf(umountCmd, dir))
 	if err != nil {
 		return fmt.Errorf("failed to run umount command: %s", err)
 	}
@@ -158,9 +165,9 @@ func UnmountDirectory(dir string) error {
 }
 
 func (target *Partition) RemovePartition() error {
-	disk, part := SeparateDiskPart(target.Path)
+	disk, part := util.SeparateDiskPart(target.Path)
 	rmPartCmd := "parted -s %s rm %s"
-	err := RunCommand(fmt.Sprintf(rmPartCmd, disk, part))
+	err := util.RunCommand(fmt.Sprintf(rmPartCmd, disk, part))
 	if err != nil {
 		return fmt.Errorf("failed to remove partition: %s", err)
 	}
@@ -169,9 +176,9 @@ func (target *Partition) RemovePartition() error {
 }
 
 func (target *Partition) ResizePartition(newEnd int) error {
-	disk, part := SeparateDiskPart(target.Path)
+	disk, part := util.SeparateDiskPart(target.Path)
 	resizePartCmd := "parted -s %s unit MiB resizepart %s %d"
-	err := RunCommand(fmt.Sprintf(resizePartCmd, disk, part, newEnd))
+	err := util.RunCommand(fmt.Sprintf(resizePartCmd, disk, part, newEnd))
 	if err != nil {
 		return fmt.Errorf("failed to resize partition: %s", err)
 	}
@@ -180,9 +187,9 @@ func (target *Partition) ResizePartition(newEnd int) error {
 }
 
 func (target *Partition) NamePartition(name string) error {
-	disk, part := SeparateDiskPart(target.Path)
+	disk, part := util.SeparateDiskPart(target.Path)
 	namePartCmd := "parted -s %s name %s %s"
-	err := RunCommand(fmt.Sprintf(namePartCmd, disk, part, name))
+	err := util.RunCommand(fmt.Sprintf(namePartCmd, disk, part, name))
 	if err != nil {
 		return fmt.Errorf("failed to name partition: %s", err)
 	}
@@ -196,9 +203,9 @@ func (target *Partition) SetPartitionFlag(flag string, state bool) error {
 		stateStr = "on"
 	}
 
-	disk, part := SeparateDiskPart(target.Path)
+	disk, part := util.SeparateDiskPart(target.Path)
 	setPartCmd := "parted -s %s set %s %s %s"
-	err := RunCommand(fmt.Sprintf(setPartCmd, disk, part, flag, stateStr))
+	err := util.RunCommand(fmt.Sprintf(setPartCmd, disk, part, flag, stateStr))
 	if err != nil {
 		return fmt.Errorf("failed to name partition: %s", err)
 	}
@@ -218,7 +225,7 @@ func (target *Partition) FillPath(basePath string) {
 func (target *Partition) GetUUID() (string, error) {
 	lsblkCmd := "lsblk -d -n -o UUID %s"
 
-	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, target.Path))
+	output, err := util.OutputCommand(fmt.Sprintf(lsblkCmd, target.Path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
@@ -229,7 +236,7 @@ func (target *Partition) GetUUID() (string, error) {
 func GetUUIDByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -d -n -o UUID %s"
 
-	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
+	output, err := util.OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition UUID: %s", err)
 	}
@@ -240,7 +247,7 @@ func GetUUIDByPath(path string) (string, error) {
 func GetFilesystemByPath(path string) (string, error) {
 	lsblkCmd := "lsblk -d -n -o FSTYPE %s"
 
-	output, err := OutputCommand(fmt.Sprintf(lsblkCmd, path))
+	output, err := util.OutputCommand(fmt.Sprintf(lsblkCmd, path))
 	if err != nil {
 		return "", fmt.Errorf("failed to get partition FSTYPE: %s", err)
 	}
@@ -250,11 +257,11 @@ func GetFilesystemByPath(path string) (string, error) {
 
 func (part *Partition) GetLUKSMapperPath() (string, error) {
 	// Assert part is a LUKS partition
-	luks, err := IsLuks(part)
+	isLuks, err := luks.IsLuks(part)
 	if err != nil {
 		return "", err
 	}
-	if !luks {
+	if !isLuks {
 		return "", fmt.Errorf("cannot get mapper path for %s. Partition is not LUKS-formatted", part.Path)
 	}
 
@@ -286,12 +293,27 @@ func (part *Partition) SetLabel(label string) error {
 		return fmt.Errorf("unsupported filesystem: %s", part.Filesystem)
 	}
 
-	err := RunCommand(labelCmd)
+	err := util.RunCommand(labelCmd)
 	if err != nil {
 		return fmt.Errorf("failed to label partition %s: %s", part.Path, err)
 	}
 
 	return nil
+}
+
+// LUKSSetLabel labels a LUKS-formatted partition. Use this instead of SetLabel
+// when setting up encrypted filesystems.
+func LUKSSetLabel(part *Partition, name string) error {
+	innerPartition := Partition{}
+
+	partUUID, err := part.GetUUID()
+	if err != nil {
+		return err
+	}
+	innerPartition.Path = fmt.Sprintf("/dev/mapper/luks-%s", partUUID)
+	innerPartition.Filesystem = part.Filesystem
+
+	return innerPartition.SetLabel(name)
 }
 
 // WaitUntilAvailable polls the specified partition until it is available.

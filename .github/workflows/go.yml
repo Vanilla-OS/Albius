@@ -22,10 +22,10 @@ jobs:
     - name: Install build dependencies
       run: |
           apt-get update
-          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2
+          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make
 
     - name: Build
-      run: go build -v ./...
+      run: make build
 
   test:
     runs-on: ubuntu-latest
@@ -40,4 +40,4 @@ jobs:
 
     - name: Test
       run: |
-        distrobox enter -r albius_test -- sudo go test -v ./...
+        distrobox enter -r albius_test -- sudo make test

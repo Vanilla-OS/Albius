@@ -1,25 +1,27 @@
-package albius
+package system
 
 import (
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/vanilla-os/albius/core/util"
 )
 
 func SetTimezone(targetRoot, tz string) error {
 	tzPath := targetRoot + "/etc/timezone"
 
-	err := os.WriteFile(tzPath, []byte(tz), 0644)
+	err := os.WriteFile(tzPath, []byte(tz), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %s", err)
 	}
 
 	linkZoneinfoCmd := "ln -sf /usr/share/zoneinfo/%s /etc/localtime"
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(linkZoneinfoCmd, tz))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(linkZoneinfoCmd, tz))
 	} else {
-		err = RunCommand(fmt.Sprintf(linkZoneinfoCmd, tz))
+		err = util.RunCommand(fmt.Sprintf(linkZoneinfoCmd, tz))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to set timezone: %s", err)
@@ -33,9 +35,9 @@ func AddUser(targetRoot, username, fullname string, groups []string, password ..
 
 	var err error
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, username, fullname, username))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, username, fullname, username))
 	} else {
-		err = RunCommand(fmt.Sprintf(adduserCmd, username, fullname, username))
+		err = util.RunCommand(fmt.Sprintf(adduserCmd, username, fullname, username))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to create user: %s", err)
@@ -44,9 +46,9 @@ func AddUser(targetRoot, username, fullname string, groups []string, password ..
 	if len(password) == 1 {
 		passwdCmd := "echo \"%s:%s\" | chpasswd"
 		if targetRoot != "" {
-			err = RunInChroot(targetRoot, fmt.Sprintf(passwdCmd, username, password[0]))
+			err = util.RunInChroot(targetRoot, fmt.Sprintf(passwdCmd, username, password[0]))
 		} else {
-			err = RunCommand(fmt.Sprintf(passwdCmd, username, password[0]))
+			err = util.RunCommand(fmt.Sprintf(passwdCmd, username, password[0]))
 		}
 		if err != nil {
 			return fmt.Errorf("failed to set password: %s", err)
@@ -61,9 +63,9 @@ func AddUser(targetRoot, username, fullname string, groups []string, password ..
 	addGroupCmd := "usermod -a -G %s %s"
 	groupList := strings.Join(groups, ",")
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, fmt.Sprintf(addGroupCmd, groupList, username))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(addGroupCmd, groupList, username))
 	} else {
-		err = RunCommand(fmt.Sprintf(addGroupCmd, groupList, username))
+		err = util.RunCommand(fmt.Sprintf(addGroupCmd, groupList, username))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to add groups to user: %s", err)
@@ -81,9 +83,9 @@ func RemovePackages(targetRoot, pkgRemovePath, removeCmd string) error {
 	pkgList := strings.ReplaceAll(string(pkgRemoveContent), "\n", " ")
 	completeCmd := fmt.Sprintf("%s %s", removeCmd, pkgList)
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, completeCmd)
+		err = util.RunInChroot(targetRoot, completeCmd)
 	} else {
-		err = RunCommand(completeCmd)
+		err = util.RunCommand(completeCmd)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to remove packages: %s", err)
@@ -94,7 +96,7 @@ func RemovePackages(targetRoot, pkgRemovePath, removeCmd string) error {
 
 func ChangeHostname(targetRoot, hostname string) error {
 	hostnamePath := targetRoot + "/etc/hostname"
-	err := os.WriteFile(hostnamePath, []byte(hostname+"\n"), 0644)
+	err := os.WriteFile(hostnamePath, []byte(hostname+"\n"), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to change hostname: %s", err)
 	}
@@ -104,7 +106,7 @@ func ChangeHostname(targetRoot, hostname string) error {
 127.0.1.1	%s.localdomain	%s
 `
 	hostsPath := targetRoot + "/etc/hosts"
-	err = os.WriteFile(hostsPath, []byte(fmt.Sprintf(hostsContents, hostname, hostname)), 0644)
+	err = os.WriteFile(hostsPath, []byte(fmt.Sprintf(hostsContents, hostname, hostname)), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to change hosts file: %s", err)
 	}
@@ -113,20 +115,20 @@ func ChangeHostname(targetRoot, hostname string) error {
 }
 
 func SetLocale(targetRoot, locale string) error {
-	err := RunCommand(fmt.Sprintf("grep %s %s/usr/share/i18n/SUPPORTED", locale, targetRoot))
+	err := util.RunCommand(fmt.Sprintf("grep %s %s/usr/share/i18n/SUPPORTED", locale, targetRoot))
 	if err != nil {
 		return fmt.Errorf("locale %s is invalid", locale)
 	}
 
-	err = RunCommand(fmt.Sprintf("sed -i 's/^\\# \\(%s\\)/\\1/' %s/etc/locale.gen", regexp.QuoteMeta(locale), targetRoot))
+	err = util.RunCommand(fmt.Sprintf("sed -i 's/^\\# \\(%s\\)/\\1/' %s/etc/locale.gen", regexp.QuoteMeta(locale), targetRoot))
 	if err != nil {
 		return fmt.Errorf("failed to set locale: %s", err)
 	}
 
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, "locale-gen")
+		err = util.RunInChroot(targetRoot, "locale-gen")
 	} else {
-		err = RunCommand("locale-gen")
+		err = util.RunCommand("locale-gen")
 	}
 	if err != nil {
 		return fmt.Errorf("failed to set locale: %s", err)
@@ -144,7 +146,7 @@ LC_MEASUREMENT=__lang__
 LC_IDENTIFICATION=__lang__
 `
 	localePath := targetRoot + "/etc/default/locale"
-	err = os.WriteFile(localePath, []byte(strings.ReplaceAll(localeContents, "__lang__", locale)), 0644)
+	err = os.WriteFile(localePath, []byte(strings.ReplaceAll(localeContents, "__lang__", locale)), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to set locale: %s", err)
 	}
@@ -155,9 +157,9 @@ LC_IDENTIFICATION=__lang__
 func Swapon(targetRoot, swapPart string) error {
 	swaponCmd := "swapon %s"
 	if targetRoot != "" {
-		return RunInChroot(targetRoot, fmt.Sprintf(swaponCmd, swapPart))
+		return util.RunInChroot(targetRoot, fmt.Sprintf(swaponCmd, swapPart))
 	} else {
-		return RunCommand(fmt.Sprintf(swaponCmd, swapPart))
+		return util.RunCommand(fmt.Sprintf(swaponCmd, swapPart))
 	}
 }
 
@@ -170,15 +172,15 @@ XKBVARIANT="%s"
 BACKSPACE="guess"
 `
 	keyboardPath := targetRoot + "/etc/default/keyboard"
-	err := os.WriteFile(keyboardPath, []byte(fmt.Sprintf(keyboardContents, kbModel, kbLayout, kbVariant)), 0644)
+	err := os.WriteFile(keyboardPath, []byte(fmt.Sprintf(keyboardContents, kbModel, kbLayout, kbVariant)), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to set keyboard layout: %s", err)
 	}
 
 	if targetRoot != "" {
-		err = RunInChroot(targetRoot, "setupcon --save-only")
+		err = util.RunInChroot(targetRoot, "setupcon --save-only")
 	} else {
-		err = RunCommand("setupcon --save-only")
+		err = util.RunCommand("setupcon --save-only")
 	}
 	if err != nil {
 		return fmt.Errorf("failed to set keyboard layout: %s", err)

@@ -23,7 +23,7 @@ jobs:
         rm -r /run/host${{ runner.tool_cache }}
 
     - name: Install needed packages
-      run: apt update && apt install dpkg-dev build-essential debhelper libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 dh-golang golang-go gcc pkg-config  -y
+      run: apt update && apt install dpkg-dev build-essential debhelper libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 dh-golang golang-go gcc pkg-config make  -y
 
     - name: Build debian package
       run: |

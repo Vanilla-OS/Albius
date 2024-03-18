@@ -5,6 +5,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	luks "github.com/vanilla-os/albius/core/disk/luks"
 	"github.com/vanilla-os/albius/core/util"
@@ -319,9 +320,6 @@ func LUKSSetLabel(part *Partition, name string) error {
 // This is particularly useful to make sure a recently created or modified
 // partition is recognized by the system.
 func (part *Partition) WaitUntilAvailable() {
-	// maxTimeout := 1000
-	// timeout := 0
-
 	for {
 		_, err := os.Stat(part.Path)
 		if !os.IsNotExist(err) {
@@ -333,13 +331,12 @@ func (part *Partition) WaitUntilAvailable() {
 			if uuid, err := part.GetUUID(); err != nil && uuid != "" {
 				return
 			}
+
+			fmt.Println("Partition does not have UUID, retrying...")
+		} else {
+			fmt.Println("Partition not found, retrying...")
 		}
-		// time.Sleep(50 * time.Millisecond)
-		//
-		// timeout += 1
-		// if timeout == maxTimeout {
-		// 	// We can't recover from this, so just panic
-		// 	panic(fmt.Sprintf("Timed out waiting for partition %s", part.Path))
-		// }
+
+		time.Sleep(50 * time.Millisecond)
 	}
 }

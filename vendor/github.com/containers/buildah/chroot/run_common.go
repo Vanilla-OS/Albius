@@ -34,6 +34,8 @@ const (
 	runUsingChrootCommand = "buildah-chroot-runtime"
 	// runUsingChrootExec is a command we use as a key for reexec
 	runUsingChrootExecCommand = "buildah-chroot-exec"
+	// containersConfEnv is an environment variable that we need to pass down except for the command itself
+	containersConfEnv = "CONTAINERS_CONF"
 )
 
 func init() {
@@ -128,6 +130,9 @@ func RunUsingChroot(spec *specs.Spec, bundlePath, homeDir string, stdin io.Reade
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
 	cmd.Dir = "/"
 	cmd.Env = []string{fmt.Sprintf("LOGLEVEL=%d", logrus.GetLevel())}
+	if _, ok := os.LookupEnv(containersConfEnv); ok {
+		cmd.Env = append(cmd.Env, containersConfEnv+"="+os.Getenv(containersConfEnv))
+	}
 
 	interrupted := make(chan os.Signal, 100)
 	cmd.Hook = func(int) error {
@@ -501,12 +506,19 @@ func runUsingChroot(spec *specs.Spec, bundlePath string, ctty *os.File, stdin io
 	// Apologize for the namespace configuration that we're about to ignore.
 	logNamespaceDiagnostics(spec)
 
+	// We need to lock the thread so that PR_SET_PDEATHSIG won't trigger if the current thread exits.
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
 	// Start the parent subprocess.
 	cmd := unshare.Command(append([]string{runUsingChrootExecCommand}, spec.Process.Args...)...)
 	setPdeathsig(cmd.Cmd)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
 	cmd.Dir = "/"
 	cmd.Env = []string{fmt.Sprintf("LOGLEVEL=%d", logrus.GetLevel())}
+	if _, ok := os.LookupEnv(containersConfEnv); ok {
+		cmd.Env = append(cmd.Env, containersConfEnv+"="+os.Getenv(containersConfEnv))
+	}
 	if ctty != nil {
 		cmd.Setsid = true
 		cmd.Ctty = ctty

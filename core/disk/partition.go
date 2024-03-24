@@ -328,7 +328,7 @@ func (part *Partition) WaitUntilAvailable() {
 				return
 			}
 
-			if uuid, err := part.GetUUID(); err != nil && uuid != "" {
+			if uuid, err := part.GetUUID(); err == nil && uuid != "" {
 				return
 			}
 

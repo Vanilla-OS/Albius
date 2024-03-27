@@ -35,7 +35,7 @@ jobs:
 
     - name: Install test dependencies
       run: |
-        curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.6.0/install | sudo sh
         ./utils/create_test_env.sh
 
     - name: Test

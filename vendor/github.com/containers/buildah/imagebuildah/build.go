@@ -15,8 +15,10 @@ import (
 	"sync"
 
 	"github.com/containerd/containerd/platforms"
+	"github.com/containers/buildah"
 	"github.com/containers/buildah/define"
 	internalUtil "github.com/containers/buildah/internal/util"
+	"github.com/containers/buildah/pkg/parse"
 	"github.com/containers/buildah/util"
 	"github.com/containers/common/libimage"
 	"github.com/containers/common/pkg/config"
@@ -65,7 +67,9 @@ func BuildDockerfiles(ctx context.Context, store storage.Store, options define.B
 	if options.CommonBuildOpts == nil {
 		options.CommonBuildOpts = &define.CommonBuildOptions{}
 	}
-
+	if err := parse.Volumes(options.CommonBuildOpts.Volumes); err != nil {
+		return "", nil, fmt.Errorf("validating volumes: %w", err)
+	}
 	if len(paths) == 0 {
 		return "", nil, errors.New("building: no dockerfiles specified")
 	}
@@ -264,6 +268,9 @@ func BuildDockerfiles(ctx context.Context, store storage.Store, options define.B
 			}
 			thisID, thisRef, err := buildDockerfilesOnce(ctx, store, loggerPerPlatform, logPrefix, platformOptions, paths, files)
 			if err != nil {
+				if errorContext := strings.TrimSpace(logPrefix); errorContext != "" {
+					return fmt.Errorf("%s: %w", errorContext, err)
+				}
 				return err
 			}
 			instancesLock.Lock()
@@ -666,7 +673,7 @@ func baseImages(dockerfilenames []string, dockerfilecontents [][]byte, from stri
 							}
 						}
 						base := child.Next.Value
-						if base != "scratch" && !nicknames[base] {
+						if base != "" && base != buildah.BaseImageFakeName && !nicknames[base] {
 							headingArgs := argsMapToSlice(stage.Builder.HeadingArgs)
 							userArgs := argsMapToSlice(stage.Builder.Args)
 							// append heading args so if --build-arg key=value is not

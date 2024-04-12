@@ -45,14 +45,14 @@ func IsLuks(part Partition) (bool, error) {
 func LuksOpen(part Partition, mapping, password string) error {
 	var luksOpenCmd string
 	if password != "" {
-		luksOpenCmd = fmt.Sprintf("echo '%s' | ", password)
+		luksOpenCmd = "printf \"%%s\" \"$LUKSPASS\" | "
 	} else {
 		luksOpenCmd = ""
 	}
 
 	luksOpenCmd += "cryptsetup open %s %s"
 
-	err := util.RunCommand(fmt.Sprintf(luksOpenCmd, part.GetPath(), mapping))
+	err := util.RunCommand(fmt.Sprintf(luksOpenCmd, part.GetPath(), mapping), "LUKSPASS="+password)
 	if err != nil {
 		return fmt.Errorf("failed to open LUKS-encrypted partition: %s", err)
 	}
@@ -91,9 +91,9 @@ func LuksClose(mapping string) error {
 }
 
 func LuksFormat(part Partition, password string) error {
-	luksFormatCmd := "echo '%s' | cryptsetup -q luksFormat %s"
+	luksFormatCmd := "printf \"%%s\" \"$LUKSPASS\" | cryptsetup -q luksFormat %s"
 
-	err := util.RunCommand(fmt.Sprintf(luksFormatCmd, password, part.GetPath()))
+	err := util.RunCommand(fmt.Sprintf(luksFormatCmd, part.GetPath()), "LUKSPASS="+password)
 	if err != nil {
 		return fmt.Errorf("failed to create LUKS-encrypted partition: %s", err)
 	}

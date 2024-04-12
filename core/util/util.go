@@ -10,10 +10,13 @@ import (
 )
 
 // RunCommand executes a command in a subshell
-func RunCommand(command string) error {
+//
+// envVars are environement variables in the form MYVAR=myvalue that will be passed to the command
+func RunCommand(command string, envVars ...string) error {
 	stderr := new(bytes.Buffer)
 
 	cmd := exec.Command("sh", "-c", command)
+	cmd.Env = append(os.Environ(), envVars...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = stderr
 

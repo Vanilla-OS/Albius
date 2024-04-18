@@ -33,14 +33,14 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # See both:
-    # https://github.com/actions/runner-images/issues/9425
-    # https://noobient.com/2023/11/15/fixing-ubuntu-containers-failing-to-start-with-systemd/
-    - name: Setup podman and patch crun
+    - name: Install podman
+      run: sudo apt-get install -y podman
+
+    # See: https://github.com/actions/runner-images/issues/9425
+    - name: Patch crun
       env:
         CRUN_VER: 1.14.4
       run: |
-        sudo apt-get install -y podman
         echo -e "Replacing $(crun --version | head -1) with newer (${CRUN_VER})"
         curl -Lo crun "https://github.com/containers/crun/releases/download/${CRUN_VER}/crun-${CRUN_VER}-linux-amd64"
         sudo install crun /usr/bin/crun

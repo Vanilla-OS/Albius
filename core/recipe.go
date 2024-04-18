@@ -72,6 +72,18 @@ func ReadRecipe(path string) (*Recipe, error) {
 	return &recipe, nil
 }
 
+func operationError(operation string, err any, args ...any) error {
+	prefix := fmt.Sprintf("%s: ", operation)
+	switch e := err.(type) {
+	case string:
+		return fmt.Errorf(prefix+e, args...)
+	case error:
+		return fmt.Errorf(prefix + e.Error())
+	default:
+		return fmt.Errorf(prefix+"%v", e)
+	}
+}
+
 func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	target, err := disk.LocateDisk(diskLabel)
 	if err != nil {
@@ -91,7 +103,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		label := disk.DiskLabel(args[0].(string))
 		err = target.LabelDisk(label)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### mkpart
 	 *
@@ -119,31 +131,31 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			luksPassword := args[4].(string)
 			part, err := target.NewPartition(name, "", start, end)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 			err = luks.LuksFormat(part, luksPassword)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 			// lsblk seems to take a few milliseconds to update the partition's
 			// UUID, so we loop until it gives us one
 			part.WaitUntilAvailable()
 			uuid, err := part.GetUUID()
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 			err = luks.LuksOpen(part, fmt.Sprintf("luks-%s", uuid), luksPassword)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 			part.Filesystem = disk.PartitionFs(strings.TrimPrefix(string(fsType), "luks-"))
 			err = disk.LUKSMakeFs(*part)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 			err = disk.LUKSSetLabel(part, name)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		} else { // Unencrypted partition
 			if fsType == "none" {
@@ -151,7 +163,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			}
 			_, err := target.NewPartition(name, fsType, start, end)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### rm
@@ -164,11 +176,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "rm":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = target.GetPartition(partNum).RemovePartition()
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### resizepart
 	 *
@@ -181,15 +193,15 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "resizepart":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		partNewSize, err := strconv.Atoi(args[1].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = target.GetPartition(partNum).ResizePartition(partNewSize)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### namepart
 	 *
@@ -202,19 +214,19 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "namepart":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
-		partNewName := args[1].(string)
-		if err != nil {
-			return err
+		partNewName, ok := args[1].(string)
+		if !ok {
+			return operationError(operation, "%v is not a string", partNewName)
 		}
 		err = target.GetPartition(partNum).SetLabel(partNewName)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = target.GetPartition(partNum).NamePartition(partNewName)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### setflag
 	 *
@@ -229,11 +241,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "setflag":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = target.GetPartition(partNum).SetPartitionFlag(args[1].(string), args[2].(bool))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### format
 	 *
@@ -247,19 +259,19 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "format":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		filesystem := args[1].(string)
 		target.GetPartition(partNum).Filesystem = disk.PartitionFs(filesystem)
 		err = disk.MakeFs(target.GetPartition(partNum))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		if len(args) == 3 {
 			label := args[2].(string)
 			err := target.GetPartition(partNum).SetLabel(label)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### luks-format
@@ -275,7 +287,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	case "luks-format":
 		partNum, err := strconv.Atoi(args[0].(string))
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		filesystem := args[1].(string)
 		password := args[2].(string)
@@ -283,28 +295,28 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part.Filesystem = disk.PartitionFs(filesystem)
 		err = luks.LuksFormat(part, password)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		// lsblk seems to take a few milliseconds to update the partition's
 		// UUID, so we loop until it gives us one
 		part.WaitUntilAvailable()
 		uuid, err := part.GetUUID()
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = luks.LuksOpen(part, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = disk.LUKSMakeFs(*part)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
 			err := disk.LUKSSetLabel(part, label)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### pvcreate
@@ -320,7 +332,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		dummyPart.WaitUntilAvailable()
 		err := lvm.Pvcreate(part)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### pvresize
 	 *
@@ -340,7 +352,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			err = lvm.Pvresize(part)
 		}
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### pvremove
 	 *
@@ -353,7 +365,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		part := args[0].(string)
 		err := lvm.Pvremove(part)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### vgcreate
 	 *
@@ -379,7 +391,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := lvm.Vgcreate(name, pvList...)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### vgrename
 	 *
@@ -394,7 +406,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		newName := args[1].(string)
 		_, err := lvm.Vgrename(oldName, newName)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### vgextend
 	 *
@@ -416,7 +428,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := lvm.Vgextend(name, pvList...)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### vgreduce
 	 *
@@ -438,7 +450,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err := lvm.Vgreduce(name, pvList...)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### vgremove
 	 *
@@ -451,7 +463,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		name := args[0].(string)
 		err := lvm.Vgremove(name)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### lvcreate
 	 *
@@ -470,7 +482,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vgSize := args[3]
 		err := lvm.Lvcreate(name, vg, lvm.LVType(lvType), vgSize)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### lvrename
 	 *
@@ -487,7 +499,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		vg := args[2].(string)
 		_, err := lvm.Lvrename(oldName, newName, vg)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### lvremove
 	 *
@@ -500,7 +512,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		name := args[0].(string)
 		err := lvm.Lvremove(name)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### make-thin-pool
 	 *
@@ -515,7 +527,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		thinMetaLV := args[1].(string)
 		err := lvm.MakeThinPool(thinMetaLV, thinDataLV)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### lvcreate-thin
 	 *
@@ -534,7 +546,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		thinPool := args[3].(string)
 		err := lvm.LvThinCreate(name, vg, thinPool, vgSize)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### lvm-format
 	 *
@@ -550,7 +562,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		filesystem := args[1].(string)
 		lv, err := lvm.FindLv(name)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		dummyPart := disk.Partition{
 			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
@@ -558,13 +570,13 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err = disk.MakeFs(&dummyPart)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		if len(args) == 3 {
 			label := args[2].(string)
 			err := dummyPart.SetLabel(label)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### lvm-luks-format
@@ -583,7 +595,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		password := args[2].(string)
 		lv, err := lvm.FindLv(name)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		dummyPart := disk.Partition{
 			Path:       "/dev/" + lv.VgName + "/" + lv.Name,
@@ -591,28 +603,28 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		}
 		err = luks.LuksFormat(&dummyPart, password)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		// lsblk seems to take a few milliseconds to update the partition's
 		// UUID, so we loop until it gives us one
 		dummyPart.WaitUntilAvailable()
 		uuid, err := dummyPart.GetUUID()
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = luks.LuksOpen(&dummyPart, fmt.Sprintf("luks-%s", uuid), password)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		err = disk.LUKSMakeFs(dummyPart)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		if len(args) == 4 {
 			label := args[3].(string)
 			err := disk.LUKSSetLabel(&dummyPart, label)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! --- */
@@ -669,7 +681,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			err = system.AddUser(targetRoot, username, fullname, groups)
 		}
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### timezone
 	 *
@@ -682,7 +694,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		tz := args[0].(string)
 		err := system.SetTimezone(targetRoot, tz)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### shell
 	 *
@@ -701,7 +713,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 				err = util.RunCommand(command)
 			}
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### pkgremove
@@ -717,7 +729,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		removeCmd := args[1].(string)
 		err := system.RemovePackages(targetRoot, pkgRemovePath, removeCmd)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### hostname
 	 *
@@ -730,7 +742,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		newHostname := args[0].(string)
 		err := system.ChangeHostname(targetRoot, newHostname)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### locale
 	 *
@@ -743,7 +755,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		localeCode := args[0].(string)
 		err := system.SetLocale(targetRoot, localeCode)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### swapon
 	 *
@@ -756,7 +768,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		partition := args[0].(string)
 		err := system.Swapon(targetRoot, partition)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### keyboard
 	 *
@@ -773,7 +785,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		variant := args[2].(string)
 		err := system.SetKeyboardLayout(targetRoot, layout, model, variant)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### grub-install
 	 *
@@ -800,11 +812,11 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		case "efi":
 			grubTarget = system.EFI
 		default:
-			return fmt.Errorf("failed to execute operation: %s: Unrecognized firmware type: '%s')", operation, target)
+			return operationError(operation, "unrecognized firmware type: %s", target)
 		}
 		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, efiDevice)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### grub-default-config
 	 *
@@ -816,7 +828,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	case "grub-default-config":
 		currentConfig, err := system.GetGrubConfig(targetRoot)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 		for _, arg := range args {
 			kv := strings.SplitN(arg.(string), "=", 2)
@@ -824,7 +836,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		}
 		err = system.WriteGrubConfig(targetRoot, currentConfig)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	/* !! ### grub-add-script
 	 *
@@ -838,7 +850,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			scriptPath := arg.(string)
 			err := system.AddGrubScript(targetRoot, scriptPath)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### grub-remove-script
@@ -853,7 +865,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			scriptName := arg.(string)
 			err := system.RemoveGrubScript(targetRoot, scriptName)
 			if err != nil {
-				return err
+				return operationError(operation, err)
 			}
 		}
 	/* !! ### grub-mkconfig
@@ -867,7 +879,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		outputPath := args[0].(string)
 		err := system.RunGrubMkconfig(targetRoot, outputPath)
 		if err != nil {
-			return err
+			return operationError(operation, err)
 		}
 	default:
 		return fmt.Errorf("unrecognized operation %s", operation)

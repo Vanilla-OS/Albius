@@ -35,7 +35,8 @@ jobs:
 
     - name: Install test dependencies
       run: |
-        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.6.0/install | sudo sh
+        apt-get install -y podman
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.7.1/install | sudo sh
         ./utils/create_test_env.sh
 
     - name: Test

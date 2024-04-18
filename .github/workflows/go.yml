@@ -33,9 +33,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install podman
+      run: sudo apt-get install -y podman
+
+    # See: https://github.com/actions/runner-images/issues/9425
+    - name: Patch crun
+      env:
+        CRUN_VER: 1.14.4
+      run: |
+        echo -e "Replacing $(crun --version | head -1) with newer (${CRUN_VER})"
+        curl -Lo crun "https://github.com/containers/crun/releases/download/${CRUN_VER}/crun-${CRUN_VER}-linux-amd64"
+        sudo install crun /usr/bin/crun
+
     - name: Install test dependencies
       run: |
-        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.6.0/install | sudo sh
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.7.1/install | sudo sh
         ./utils/create_test_env.sh
 
     - name: Test

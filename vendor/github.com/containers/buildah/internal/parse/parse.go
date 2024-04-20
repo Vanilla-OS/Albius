@@ -11,6 +11,7 @@ import (
 
 	"errors"
 
+        "github.com/containers/buildah/copier"
 	"github.com/containers/buildah/define"
 	"github.com/containers/buildah/internal"
 	internalUtil "github.com/containers/buildah/internal/util"
@@ -55,6 +56,7 @@ func GetBindMount(ctx *types.SystemContext, args []string, contextDir string, st
 		Type: define.TypeBind,
 	}
 
+	setRelabel := false
 	mountReadability := false
 	setDest := false
 	bindNonRecursive := false
@@ -111,6 +113,22 @@ func GetBindMount(ctx *types.SystemContext, args []string, contextDir string, st
 			}
 			newMount.Destination = targetPath
 			setDest = true
+		case "relabel":
+			if setRelabel {
+				return newMount, "", fmt.Errorf("cannot pass 'relabel' option more than once: %w", errBadOptionArg)
+			}
+			setRelabel = true
+			if len(kv) != 2 {
+				return newMount, "", fmt.Errorf("%s mount option must be 'private' or 'shared': %w", kv[0], errBadMntOption)
+			}
+			switch kv[1] {
+			case "private":
+				newMount.Options = append(newMount.Options, "Z")
+			case "shared":
+				newMount.Options = append(newMount.Options, "z")
+			default:
+				return newMount, "", fmt.Errorf("%s mount option must be 'private' or 'shared': %w", kv[0], errBadMntOption)
+			}
 		case "consistency":
 			// Option for OS X only, has no meaning on other platforms
 			// and can thus be safely ignored.
@@ -164,7 +182,11 @@ func GetBindMount(ctx *types.SystemContext, args []string, contextDir string, st
 	// buildkit parity: support absolute path for sources from current build context
 	if contextDir != "" {
 		// path should be /contextDir/specified path
-		newMount.Source = filepath.Join(contextDir, filepath.Clean(string(filepath.Separator)+newMount.Source))
+                evaluated, err := copier.Eval(contextDir, newMount.Source, copier.EvalOptions{})
+                if err != nil {
+                        return newMount, "", err
+                }
+                newMount.Source = evaluated
 	} else {
 		// looks like its coming from `build run --mount=type=bind` allow using absolute path
 		// error out if no source is set

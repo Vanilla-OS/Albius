@@ -1,8 +1,10 @@
 package disk
 
 import (
+	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"runtime"
 	"strings"
 	"testing"
@@ -13,6 +15,20 @@ import (
 var diskPath string
 
 func TestMain(m *testing.M) {
+	_, shouldSkip := os.LookupEnv("SKIP_ROOT_TESTS")
+	currentUser, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	if currentUser.Username != "root" {
+		if shouldSkip {
+			log.Print("SKIP_ROOT_TESTS is set. Skipping test suite.")
+			os.Exit(0)
+		} else {
+			log.Fatal("This test suite requires root privileges, which we do not have.\n\t\t    TIP: You can set the SKIP_ROOT_TESTS environment variable to ignore tests which require root access.")
+		}
+	}
+
 	_, filename, _, _ := runtime.Caller(0)
 	projRoot, _, _ := strings.Cut(filename, "core/")
 

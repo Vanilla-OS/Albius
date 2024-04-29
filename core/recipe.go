@@ -3,6 +3,7 @@ package albius
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -21,12 +22,12 @@ const (
 	OCI        = "oci"
 )
 
+type InstallationMethod string
+
 const (
 	RootA = "/mnt/a"
 	RootB = "/mnt/b"
 )
-
-type InstallationMethod string
 
 type Recipe struct {
 	Setup            []SetupStep
@@ -81,6 +82,20 @@ func operationError(operation string, err any, args ...any) error {
 		return fmt.Errorf(prefix + e.Error())
 	default:
 		return fmt.Errorf(prefix+"%v", e)
+	}
+}
+
+// jsonFieldToInt converts a value read from JSON into an integer. Since all
+// numbers in JSON are float64's, we cannot cast to int directly. This function
+// parses either a float64 or a string into an int, returns an error if the
+// conversion failed.
+func jsonFieldToInt(value any) (int, error) {
+	if valueF64, ok := value.(float64); ok {
+		return int(valueF64), nil
+	} else if valueString, ok := value.(string); ok {
+		return strconv.Atoi(valueString)
+	} else {
+		return math.MaxInt, fmt.Errorf("jsonToInt only accepts float64 or string")
 	}
 }
 
@@ -174,7 +189,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 	 */
 	case "rm":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}
@@ -191,11 +206,11 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *PartNewSize* (`int`): The new size in MiB for the partition.
 	 */
 	case "resizepart":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}
-		partNewSize, err := strconv.Atoi(args[1].(string))
+		partNewSize, err := jsonFieldToInt(args[1])
 		if err != nil {
 			return operationError(operation, err)
 		}
@@ -212,7 +227,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *PartNewName* (`string`): The new name for the partition.
 	 */
 	case "namepart":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}
@@ -239,7 +254,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *State* (`bool`): The value to apply to the flag. Either `true` or `false`.
 	 */
 	case "setflag":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}
@@ -257,7 +272,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 	 */
 	case "format":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}
@@ -285,7 +300,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 * - *Label* (optional `string`): An optional filesystem label. If not given, no label will be set.
 	 */
 	case "luks-format":
-		partNum, err := strconv.Atoi(args[0].(string))
+		partNum, err := jsonFieldToInt(args[0])
 		if err != nil {
 			return operationError(operation, err)
 		}

@@ -39,11 +39,11 @@ jobs:
     - name: Install podman
       run: |
         apt-get update
-        apt-get install -y podman gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make
+        apt-get install -y podman gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make curl
 
     - name: Install test dependencies
       run: |
-        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.7.1/install | sudo sh
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/1.7.1/install | sh
         ./utils/create_test_env.sh
 
     - name: Test

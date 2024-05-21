@@ -8,7 +8,7 @@ deb:
 	dpkg-buildpackage --no-sign
 
 test:
-	sudo go test -v ./...
+	go test -v ./...
 
 .PHONY: clean
 

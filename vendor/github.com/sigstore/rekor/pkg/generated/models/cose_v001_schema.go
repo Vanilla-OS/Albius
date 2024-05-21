@@ -39,7 +39,8 @@ import (
 type CoseV001Schema struct {
 
 	// data
-	Data *CoseV001SchemaData `json:"data,omitempty"`
+	// Required: true
+	Data *CoseV001SchemaData `json:"data"`
 
 	// The COSE Sign1 Message
 	// Format: byte
@@ -70,8 +71,9 @@ func (m *CoseV001Schema) Validate(formats strfmt.Registry) error {
 }
 
 func (m *CoseV001Schema) validateData(formats strfmt.Registry) error {
-	if swag.IsZero(m.Data) { // not required
-		return nil
+
+	if err := validate.Required("data", "body", m.Data); err != nil {
+		return err
 	}
 
 	if m.Data != nil {
@@ -114,10 +116,6 @@ func (m *CoseV001Schema) ContextValidate(ctx context.Context, formats strfmt.Reg
 func (m *CoseV001Schema) contextValidateData(ctx context.Context, formats strfmt.Registry) error {
 
 	if m.Data != nil {
-
-		if swag.IsZero(m.Data) { // not required
-			return nil
-		}
 
 		if err := m.Data.ContextValidate(ctx, formats); err != nil {
 			if ve, ok := err.(*errors.Validation); ok {

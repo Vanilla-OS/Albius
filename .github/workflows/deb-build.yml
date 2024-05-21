@@ -25,6 +25,9 @@ jobs:
     - name: Install needed packages
       run: apt update && apt install dpkg-dev build-essential debhelper libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 dh-golang golang-go gcc pkg-config make  -y
 
+    - name: Vendor dependencies
+      run: go mod vendor
+
     - name: Build debian package
       run: |
         make deb

@@ -48,4 +48,4 @@ jobs:
 
     - name: Test
       run: |
-        distrobox enter -r albius_test -- sudo make test
+        distrobox enter -r albius_test -- make test

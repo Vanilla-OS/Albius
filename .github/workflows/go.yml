@@ -21,29 +21,25 @@ jobs:
 
     - name: Install build dependencies
       run: |
-          apt-get update
-          apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make
+        apt-get update
+        apt-get install -y gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make
 
     - name: Build
       run: make build
 
   test:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vanilla-os/pico:main
+      options: --privileged
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install podman
-      run: sudo apt-get install -y podman
-
-    # See: https://github.com/actions/runner-images/issues/9425
-    - name: Patch crun
-      env:
-        CRUN_VER: 1.14.4
       run: |
-        echo -e "Replacing $(crun --version | head -1) with newer (${CRUN_VER})"
-        curl -Lo crun "https://github.com/containers/crun/releases/download/${CRUN_VER}/crun-${CRUN_VER}-linux-amd64"
-        sudo install crun /usr/bin/crun
+        apt-get update
+        apt-get install -y podman gcc pkg-config libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 make
 
     - name: Install test dependencies
       run: |

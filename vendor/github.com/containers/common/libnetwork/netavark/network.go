@@ -1,5 +1,4 @@
 //go:build linux || freebsd
-// +build linux freebsd
 
 package netavark
 
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containers/common/libnetwork/internal/rootlessnetns"
 	"github.com/containers/common/libnetwork/internal/util"
 	"github.com/containers/common/libnetwork/types"
 	"github.com/containers/common/pkg/config"
@@ -35,6 +35,9 @@ type netavarkNetwork struct {
 	netavarkBinary string
 	// aardvarkBinary is the path to the aardvark binary.
 	aardvarkBinary string
+
+	// firewallDriver sets the firewall driver to use
+	firewallDriver string
 
 	// defaultNetwork is the name for the default network.
 	defaultNetwork string
@@ -65,6 +68,9 @@ type netavarkNetwork struct {
 
 	// networks is a map with loaded networks, the key is the network name
 	networks map[string]*types.Network
+
+	// rootlessNetns is used for the rootless network setup/teardown
+	rootlessNetns *rootlessnetns.Netns
 }
 
 type InitConfig struct {
@@ -79,23 +85,12 @@ type InitConfig struct {
 	// NetworkRunDir is where temporary files are stored, i.e.the ipam db, aardvark config
 	NetworkRunDir string
 
-	// DefaultNetwork is the name for the default network.
-	DefaultNetwork string
-	// DefaultSubnet is the default subnet for the default network.
-	DefaultSubnet string
-
-	// DefaultsubnetPools contains the subnets which must be used to allocate a free subnet by network create
-	DefaultsubnetPools []config.SubnetPool
-
-	// DNSBindPort is set the port to pass to netavark for aardvark
-	DNSBindPort uint16
-
-	// PluginDirs list of directories were netavark plugins are located
-	PluginDirs []string
-
 	// Syslog describes whenever the netavark debug output should be log to the syslog as well.
 	// This will use logrus to do so, make sure logrus is set up to log to the syslog.
 	Syslog bool
+
+	// Config containers.conf options
+	Config *config.Config
 }
 
 // NewNetworkInterface creates the ContainerNetwork interface for the netavark backend.
@@ -112,12 +107,12 @@ func NewNetworkInterface(conf *InitConfig) (types.ContainerNetwork, error) {
 		return nil, err
 	}
 
-	defaultNetworkName := conf.DefaultNetwork
+	defaultNetworkName := conf.Config.Network.DefaultNetwork
 	if defaultNetworkName == "" {
 		defaultNetworkName = types.DefaultNetworkName
 	}
 
-	defaultSubnet := conf.DefaultSubnet
+	defaultSubnet := conf.Config.Network.DefaultSubnet
 	if defaultSubnet == "" {
 		defaultSubnet = types.DefaultSubnet
 	}
@@ -134,9 +129,21 @@ func NewNetworkInterface(conf *InitConfig) (types.ContainerNetwork, error) {
 		return nil, err
 	}
 
-	defaultSubnetPools := conf.DefaultsubnetPools
+	defaultSubnetPools := conf.Config.Network.DefaultSubnetPools
 	if defaultSubnetPools == nil {
 		defaultSubnetPools = config.DefaultSubnetPools
+	}
+
+	var netns *rootlessnetns.Netns
+	// Do not use unshare.IsRootless() here. We only care if we are running re-exec in the userns,
+	// IsRootless() also returns true if we are root in a userns which is not what we care about and
+	// causes issues as this slower more complicated rootless-netns logic should not be used as root.
+	_, useRootlessNetns := os.LookupEnv(unshare.UsernsEnvName)
+	if useRootlessNetns {
+		netns, err = rootlessnetns.New(conf.NetworkRunDir, rootlessnetns.Netavark, conf.Config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	n := &netavarkNetwork{
@@ -144,15 +151,17 @@ func NewNetworkInterface(conf *InitConfig) (types.ContainerNetwork, error) {
 		networkRunDir:      conf.NetworkRunDir,
 		netavarkBinary:     conf.NetavarkBinary,
 		aardvarkBinary:     conf.AardvarkBinary,
-		networkRootless:    unshare.IsRootless(),
+		networkRootless:    useRootlessNetns,
 		ipamDBPath:         filepath.Join(conf.NetworkRunDir, "ipam.db"),
+		firewallDriver:     conf.Config.Network.FirewallDriver,
 		defaultNetwork:     defaultNetworkName,
 		defaultSubnet:      defaultNet,
 		defaultsubnetPools: defaultSubnetPools,
-		dnsBindPort:        conf.DNSBindPort,
-		pluginDirs:         conf.PluginDirs,
+		dnsBindPort:        conf.Config.Network.DNSBindPort,
+		pluginDirs:         conf.Config.Network.NetavarkPluginDirs.Get(),
 		lock:               lock,
 		syslog:             conf.Syslog,
+		rootlessNetns:      netns,
 	}
 
 	return n, nil

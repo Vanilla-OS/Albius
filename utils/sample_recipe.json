@@ -1,0 +1,333 @@
+{
+  "setup": [
+    { "disk": "/dev/sda", "operation": "label", "params": ["gpt"] },
+    {
+      "disk": "/dev/sda",
+      "operation": "mkpart",
+      "params": ["vos-boot", "ext4", 1, 1025]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "mkpart",
+      "params": ["vos-efi", "fat32", 1025, 1537]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "setflag",
+      "params": ["2", "esp", true]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "mkpart",
+      "params": ["vos-root", "none", 1537, 23556]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "mkpart",
+      "params": ["vos-var", "none", 23556, -1]
+    },
+    { "disk": "/dev/sda", "operation": "pvcreate", "params": ["/dev/sda3"] },
+    { "disk": "/dev/sda", "operation": "pvcreate", "params": ["/dev/sda4"] },
+    {
+      "disk": "/dev/sda",
+      "operation": "vgcreate",
+      "params": ["vos-root", ["/dev/sda3"]]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "vgcreate",
+      "params": ["vos-var", ["/dev/sda4"]]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate",
+      "params": ["init", "vos-root", "linear", 512]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvm-format",
+      "params": ["vos-root/init", "ext4", "vos-init"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate",
+      "params": ["root", "vos-root", "linear", 19456]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate",
+      "params": ["root-meta", "vos-root", "linear", 1024]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "make-thin-pool",
+      "params": ["vos-root/root", "vos-root/root-meta"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate-thin",
+      "params": ["root-a", "vos-root", 19456, "root"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate-thin",
+      "params": ["root-b", "vos-root", 19456, "root"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvm-format",
+      "params": ["vos-root/root-a", "btrfs", "vos-a"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvm-format",
+      "params": ["vos-root/root-b", "btrfs", "vos-b"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvcreate",
+      "params": ["var", "vos-var", "linear", "100%FREE"]
+    },
+    {
+      "disk": "/dev/sda",
+      "operation": "lvm-luks-format",
+      "params": ["vos-var/var", "btrfs", "testing", "vos-var"]
+    }
+  ],
+  "mountpoints": [
+    { "partition": "/dev/sda1", "target": "/boot" },
+    { "partition": "/dev/sda2", "target": "/boot/efi" },
+    { "partition": "/dev/vos-root/root-a", "target": "/" },
+    { "partition": "/dev/vos-root/root-b", "target": "/" },
+    { "partition": "/dev/vos-var/var", "target": "/var" }
+  ],
+  "installation": {
+    "method": "oci",
+    "source": "ghcr.io/vanilla-os/desktop:main",
+    "initramfsPre": ["lpkg --unlock"],
+    "initramfsPost": ["lpkg --lock"]
+  },
+  "postInstallation": [
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "cp /tmp/home.mount /mnt/a/etc/systemd/system/home.mount",
+        "mkdir -p /mnt/a/etc/systemd/system/local-fs.target.wants",
+        "ln -s ../home.mount /mnt/a/etc/systemd/system/local-fs.target.wants/home.mount"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "cp /tmp/opt.mount /mnt/a/etc/systemd/system/opt.mount",
+        "mkdir -p /mnt/a/etc/systemd/system/local-fs.target.wants",
+        "ln -s ../opt.mount /mnt/a/etc/systemd/system/local-fs.target.wants/opt.mount"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "cp /tmp/\\\\x2esystem-usr-lib-locale.mount /mnt/a/etc/systemd/system/\\\\x2esystem-usr-lib-locale.mount",
+        "mkdir -p /mnt/a/etc/systemd/system/local-fs.target.wants",
+        "ln -s ../\\\\x2esystem-usr-lib-locale.mount /mnt/a/etc/systemd/system/local-fs.target.wants/\\\\x2esystem-usr-lib-locale.mount"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "cp /tmp/\\\\x2esystem-etc.mount /mnt/a/etc/systemd/system/\\\\x2esystem-etc.mount",
+        "mkdir -p /mnt/a/etc/systemd/system/local-fs.target.wants",
+        "ln -s ../\\\\x2esystem-etc.mount /mnt/a/etc/systemd/system/local-fs.target.wants/\\\\x2esystem-etc.mount"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "umount /mnt/a/var",
+        "mkdir /mnt/a/tmp-boot",
+        "cp -r /mnt/a/boot /mnt/a/tmp-boot",
+        "umount -l /dev/sda1",
+        "mkdir -p /mnt/a/.system",
+        "mv /mnt/a/* /mnt/a/.system/",
+        "mv /mnt/a/.system/tmp-boot/boot/* /mnt/a/.system/boot",
+        "rm -rf /mnt/a/.system/tmp-boot",
+        "mkdir -p /mnt/a/boot",
+        "mkdir -p /mnt/a/dev",
+        "mkdir -p /mnt/a/home",
+        "mkdir -p /mnt/a/media",
+        "mkdir -p /mnt/a/mnt",
+        "mkdir -p /mnt/a/var",
+        "mkdir -p /mnt/a/opt",
+        "mkdir -p /mnt/a/part-future",
+        "mkdir -p /mnt/a/proc",
+        "mkdir -p /mnt/a/root",
+        "mkdir -p /mnt/a/run",
+        "mkdir -p /mnt/a/srv",
+        "mkdir -p /mnt/a/sys",
+        "mkdir -p /mnt/a/tmp",
+        "ln -rs /mnt/a/.system/usr /mnt/a/",
+        "ln -rs /mnt/a/.system/etc /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/bin /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/lib /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/lib32 /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/lib64 /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/libx32 /mnt/a/",
+        "ln -rs /mnt/a/.system/usr/sbin /mnt/a/",
+        "rm -rf /mnt/a/.system/dev",
+        "rm -rf /mnt/a/.system/proc",
+        "rm -rf /mnt/a/.system/run",
+        "rm -rf /mnt/a/.system/srv",
+        "rm -rf /mnt/a/.system/sys",
+        "rm -rf /mnt/a/.system/media",
+        "ln -rs /mnt/a/dev /mnt/a/.system/",
+        "ln -rs /mnt/a/proc /mnt/a/.system/",
+        "ln -rs /mnt/a/run /mnt/a/.system/",
+        "ln -rs /mnt/a/srv /mnt/a/.system/",
+        "ln -rs /mnt/a/sys /mnt/a/.system/",
+        "ln -rs /mnt/a/media /mnt/a/.system/",
+        "mount /dev/mapper/luks-$(lsblk -d -y -n -o UUID /dev/vos-var/var) /mnt/a/var",
+        "mount /dev/sda1 /mnt/a/boot && mount /dev/sda2 /mnt/a/boot/efi"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mkdir -p /etc/gdm3",
+        "echo '[daemon]\nAutomaticLogin=vanilla\nAutomaticLoginEnable=True' > /etc/gdm3/daemon.conf",
+        "mkdir -p /home/vanilla/.config/dconf",
+        "chmod 700 /home/vanilla/.config/dconf"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mkdir -p /var/lib/AccountsService/users",
+        "echo '[User]\nSession=firstsetup' > /var/lib/AccountsService/users/vanilla"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "grub-install",
+      "params": ["/mnt/a/boot", "/dev/sda", "efi", "/dev/sda2"]
+    },
+    {
+      "chroot": true,
+      "operation": "grub-install",
+      "params": ["/boot", "/dev/sda", "efi", "/dev/sda2"]
+    },
+    {
+      "chroot": true,
+      "operation": "grub-mkconfig",
+      "params": ["/boot/grub/grub.cfg"]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": ["cp /tmp/boot-grub.cfg /mnt/a/boot/grub/grub.cfg"]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": ["umount -l /mnt/a/boot", "mkdir -p /mnt/a/boot/grub"]
+    },
+    {
+      "chroot": true,
+      "operation": "grub-mkconfig",
+      "params": ["/boot/grub/grub.cfg"]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mkdir /.system/boot/init",
+        "mount /dev/vos-root/init /.system/boot/init",
+        "mkdir /.system/boot/init/vos-a",
+        "mkdir /.system/boot/init/vos-b",
+        "mv /.system/boot/vmlinuz* /.system/boot/init/vos-a",
+        "mv /.system/boot/initrd* /.system/boot/init/vos-a"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "BOOT_UUID=$(lsblk -d -n -o UUID /dev/sda1) ROOTA_UUID=$(lsblk -d -n -o UUID /dev/vos-root/root-a) KERNEL_VERSION=$(ls -1 /mnt/a/usr/lib/modules | sed '1p;d') envsubst < /tmp/abroot.cfg > /mnt/a/.system/boot/init/vos-a/abroot.cfg '$BOOT_UUID $ROOTA_UUID $KERNEL_VERSION'"
+      ]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "ROOTB_UUID=$(lsblk -d -y -n -o UUID /dev/vos-root/root-b) && sed -i \"/UUID=$ROOTB_UUID/d\" /mnt/a/etc/fstab",
+        "sed -i -r '/^[^#]\\S+\\s+\\/\\S+\\s+.+$/d' /mnt/a/etc/fstab",
+        "echo '/.system/usr  /.system/usr  none  bind,ro' >> /mnt/a/etc/fstab",
+        "VAR_UUID=$(lsblk -d -n -o UUID /dev/vos-var/var) && echo \"/dev/mapper/luks-$VAR_UUID /var  auto  defaults  0  0\" >> /mnt/a/etc/fstab"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mv /.system/home /var",
+        "mv /.system/opt /var",
+        "mv /.system/tmp /var",
+        "mkdir -p /var/lib/abroot/etc/vos-a /var/lib/abroot/etc/vos-b /var/lib/abroot/etc/vos-a-work /var/lib/abroot/etc/vos-b-work",
+        "mount -t overlay overlay -o lowerdir=/.system/etc,upperdir=/var/lib/abroot/etc/vos-a,workdir=/var/lib/abroot/etc/vos-a-work /etc",
+        "mv /var/storage /var/lib/abroot/",
+        "mount -o bind /var/home /home",
+        "mount -o bind /var/opt /opt",
+        "mount -o bind,ro /.system/usr /usr",
+        "mkdir -p /var/lib/abroot/etc/vos-a/locales",
+        "mount -o bind /var/lib/abroot/etc/vos-a/locales /usr/lib/locale"
+      ]
+    },
+    { "chroot": true, "operation": "hostname", "params": ["vanilla"] },
+    { "chroot": true, "operation": "locale", "params": ["en_US.UTF-8"] },
+    { "chroot": true, "operation": "keyboard", "params": ["us", "pc105", ""] },
+    {
+      "chroot": true,
+      "operation": "timezone",
+      "params": ["America/Sao_Paulo"]
+    },
+    {
+      "chroot": false,
+      "operation": "shell",
+      "params": [
+        "IMAGE_DIGEST=$(cat /mnt/a/.oci_digest) envsubst < /tmp/abimage.abr > /mnt/a/abimage.abr '$IMAGE_DIGEST'"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mkdir -p /etc/abroot",
+        "echo \"$(head -n-1 /usr/share/abroot/abroot.json),\n    \\\"thinProvisioning\\\": true,\n    \\\"thinInitVolume\\\": \\\"vos-init\\\"\n}\" > /etc/abroot/abroot.json"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "adduser",
+      "params": ["vanilla", "vanilla", ["sudo", "lpadmin"], "vanilla"]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": [
+        "mkdir -p /home/vanilla/.config/autostart",
+        "cp /usr/share/applications/org.vanillaos.FirstSetup.desktop /home/vanilla/.config/autostart"
+      ]
+    },
+    {
+      "chroot": true,
+      "operation": "shell",
+      "params": ["chown -R vanilla:vanilla /home/vanilla"]
+    }
+  ]
+}

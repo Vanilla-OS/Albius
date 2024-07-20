@@ -235,10 +235,6 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if !ok {
 			return operationError(operation, "%v is not a string", partNewName)
 		}
-		err = target.GetPartition(partNum).SetLabel(partNewName)
-		if err != nil {
-			return operationError(operation, err)
-		}
 		err = target.GetPartition(partNum).NamePartition(partNewName)
 		if err != nil {
 			return operationError(operation, err)

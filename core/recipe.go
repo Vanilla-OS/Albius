@@ -245,7 +245,7 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 	 *
 	 * **Accepts**:
 	 * - *PartNum* ('int'): The partition number on disk (e.g. '/dev/sda3' is partition 3).
-	 * - *Label* ('string'): The filesystem labnel
+	 * - *Label* ('string'): The filesystem label
 	 */
 	case "setlabel":
 		partNum, err := jsonFieldToInt(args[0])

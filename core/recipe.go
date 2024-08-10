@@ -239,6 +239,27 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		if err != nil {
 			return operationError(operation, err)
 		}
+	/* !! ### setlabel
+	 *
+	 * Set the filesystem label of the specified partition.
+	 *
+	 * **Accepts**:
+	 * - *PartNum* ('int'): The partition number on disk (e.g. '/dev/sda3' is partition 3).
+	 * - *Label* ('string'): The filesystem label
+	 */
+	case "setlabel":
+		partNum, err := jsonFieldToInt(args[0])
+		if err != nil {
+			return operationError(operation, err)
+		}
+		partNewName, ok := args[1].(string)
+		if !ok {
+			return operationError(operation, "%v is not a string", partNewName)
+		}
+		err = target.GetPartition(partNum).SetLabel(partNewName)
+		if err != nil {
+			return operationError(operation, err)
+		}
 	/* !! ### setflag
 	 *
 	 * Set the value of a partition flag, from the flags supported by parted.

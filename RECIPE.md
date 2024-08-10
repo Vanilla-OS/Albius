@@ -49,6 +49,14 @@ Rename the specified partition.
 - *PartNum* (`int`): The partition number on disk (e.g. `/dev/sda3` is partition 3).
 - *PartNewName* (`string`): The new name for the partition.
 
+### setlabel
+
+Set the filesystem label of the specified partition.
+
+**Accepts**:
+- *PartNum* ('int'): The partition number on disk (e.g. '/dev/sda3' is partition 3).
+- *Label* ('string'): The filesystem label
+
 ### setflag
 
 Set the value of a partition flag, from the flags supported by parted.

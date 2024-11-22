@@ -294,14 +294,15 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 			return operationError(operation, err)
 		}
 		filesystem := args[1].(string)
-		target.GetPartition(partNum).Filesystem = disk.PartitionFs(filesystem)
-		err = disk.MakeFs(target.GetPartition(partNum))
+		part := target.GetPartition(partNum)
+		part.Filesystem = disk.PartitionFs(filesystem)
+		err = disk.MakeFs(part)
 		if err != nil {
 			return operationError(operation, err)
 		}
 		if len(args) == 3 {
 			label := args[2].(string)
-			err := target.GetPartition(partNum).SetLabel(label)
+			err := part.SetLabel(label)
 			if err != nil {
 				return operationError(operation, err)
 			}

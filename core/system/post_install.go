@@ -30,25 +30,37 @@ func SetTimezone(targetRoot, tz string) error {
 	return nil
 }
 
-func AddUser(targetRoot, username, fullname string, groups []string, password ...string) error {
-	adduserCmd := "useradd --shell /bin/bash %s && usermod -c \"%s\" %s"
+// AddUser creates a new user and adds it to the groups provided
+//
+// If password is left empty, password login will be disabled.
+// If uid and/or gid are -1, they will be ignored.
+func AddUser(targetRoot, username, fullname string, groups []string, password string, uid, gid int) error {
+	adduserCmd := "useradd --shell /bin/bash %s %s && usermod -c \"%s\" %s"
+
+	extraArgs := ""
+	if uid != -1 {
+		extraArgs = " --uid " + fmt.Sprint(uid)
+	}
+	if gid != -1 {
+		extraArgs = " --gid " + fmt.Sprint(gid)
+	}
 
 	var err error
 	if targetRoot != "" {
-		err = util.RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, username, fullname, username))
+		err = util.RunInChroot(targetRoot, fmt.Sprintf(adduserCmd, extraArgs, username, fullname, username))
 	} else {
-		err = util.RunCommand(fmt.Sprintf(adduserCmd, username, fullname, username))
+		err = util.RunCommand(fmt.Sprintf(adduserCmd, extraArgs, username, fullname, username))
 	}
 	if err != nil {
 		return fmt.Errorf("failed to create user: %s", err)
 	}
 
-	if len(password) == 1 {
+	if password != "" {
 		passwdCmd := "echo \"%s:%s\" | chpasswd"
 		if targetRoot != "" {
-			err = util.RunInChroot(targetRoot, fmt.Sprintf(passwdCmd, username, password[0]))
+			err = util.RunInChroot(targetRoot, fmt.Sprintf(passwdCmd, username, password))
 		} else {
-			err = util.RunCommand(fmt.Sprintf(passwdCmd, username, password[0]))
+			err = util.RunCommand(fmt.Sprintf(passwdCmd, username, password))
 		}
 		if err != nil {
 			return fmt.Errorf("failed to set password: %s", err)

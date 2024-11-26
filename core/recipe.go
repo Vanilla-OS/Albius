@@ -696,7 +696,9 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * - *Username* (`string`): The username of the new user.
 	 * - *Fullname* (`string`): The full name (display name) of the new user.
 	 * - *Groups* (`[string]`): A list of groups the new user belongs to (the new user is automatically part of its own group).
-	 * - *Password* (optional `string`): The password for the user. If not provided, password login will be disabled.
+	 * - *Password* (optional `string`): The password for the user. If not provided or empty, password login will be disabled.
+	 * - *UID* (optional `int`): The UID for the user. Will be determined automatically if not provided.
+	 * - *GID* (optional `int`): The GID for the user. Will be determined automatically if not provided.
 	 */
 	case "adduser":
 		username := args[0].(string)
@@ -706,13 +708,20 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 			groupStr := group.(string)
 			groups = append(groups, groupStr)
 		}
-		var err error
-		if len(args) == 4 {
-			password := args[3].(string)
-			err = system.AddUser(targetRoot, username, fullname, groups, password)
-		} else {
-			err = system.AddUser(targetRoot, username, fullname, groups)
+		password := ""
+		if len(args) >= 4 {
+			password = args[3].(string)
 		}
+		uid := -1
+		if len(args) >= 5 {
+			uid = int(args[4].(float64))
+		}
+		gid := -1
+		if len(args) >= 6 {
+			gid = int(args[5].(float64))
+		}
+
+		err := system.AddUser(targetRoot, username, fullname, groups, password, uid, gid)
 		if err != nil {
 			return operationError(operation, err)
 		}

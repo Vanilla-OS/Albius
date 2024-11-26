@@ -223,6 +223,8 @@ Create a new user.
 - *Fullname* (`string`): The full name (display name) of the new user.
 - *Groups* (`[string]`): A list of groups the new user belongs to (the new user is automatically part of its own group).
 - *Password* (optional `string`): The password for the user. If not provided, password login will be disabled.
+- *UID* (optional `int`): The UID for the user. Will be determined automatically if not provided.
+- *GID* (optional `int`): The GID for the user. Will be determined automatically if not provided.
 
 ### timezone
 

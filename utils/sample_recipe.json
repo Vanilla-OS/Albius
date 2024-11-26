@@ -314,7 +314,7 @@
     {
       "chroot": true,
       "operation": "adduser",
-      "params": ["vanilla", "vanilla", ["sudo", "lpadmin"], "vanilla"]
+      "params": ["vanilla", "vanilla", ["sudo", "lpadmin"], "vanilla", 1200]
     },
     {
       "chroot": true,

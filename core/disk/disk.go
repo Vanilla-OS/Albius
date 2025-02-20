@@ -4,10 +4,12 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/vanilla-os/albius/core/lvm"
 	"github.com/vanilla-os/albius/core/util"
@@ -307,4 +309,43 @@ func setField(obj interface{}, name string, value interface{}) error {
 
 	structFieldValue.Set(convertedVal)
 	return nil
+}
+
+// WaitUntilAvailable polls the specified disk until it is available.
+//
+// This is particularly useful to make sure a recently modified disk
+// is recognized by the system.
+func (disk *Disk) WaitUntilAvailable() error {
+	printedAlready := false
+	for i := 0; i < 600; i++ {
+		_, err := os.Stat(disk.Path)
+		if os.IsNotExist(err) {
+			if !printedAlready {
+				fmt.Println("Disk not found, retrying...")
+			}
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+
+		output, err := util.OutputCommand(fmt.Sprintf("lsblk -nro NAME %s | wc -l", disk.Path))
+		if err != nil {
+			return err
+		}
+
+		count, err := strconv.Atoi(strings.TrimSpace(output))
+		if err != nil {
+			return err
+		}
+
+		if count != 0 {
+			return nil
+		}
+
+		if !printedAlready {
+			fmt.Println("Disk not valid, retrying...")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	return fmt.Errorf("timeout waiting for disk %s", disk.Path)
 }

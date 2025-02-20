@@ -105,6 +105,12 @@ func runSetupOperation(diskLabel, operation string, args []interface{}) error {
 		return err
 	}
 
+	err = target.WaitUntilAvailable()
+	if err != nil {
+		fmt.Println("disk not found:", err)
+		// try to continue anyway
+	}
+
 	/* !! ## Setup */
 	switch operation {
 	/* !! ### label

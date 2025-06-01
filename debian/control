@@ -21,7 +21,6 @@ Package: albius
 Architecture: all
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         golang-go,
          lvm2,
          parted
 Built-Using: ${misc:Built-Using}

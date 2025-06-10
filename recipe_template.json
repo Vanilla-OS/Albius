@@ -131,6 +131,8 @@
 			"params": [
 				"/boot",
 				"/dev/sda",
+				"vanilla",
+				false,
 				"efi"
 			]
 		},

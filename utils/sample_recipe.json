@@ -215,12 +215,12 @@
     {
       "chroot": false,
       "operation": "grub-install",
-      "params": ["/mnt/a/boot", "/dev/sda", "efi", "/dev/sda2"]
+      "params": ["/mnt/a/boot", "/dev/sda", "efi", "vanilla", false, "/dev/sda2"]
     },
     {
       "chroot": true,
       "operation": "grub-install",
-      "params": ["/boot", "/dev/sda", "efi", "/dev/sda2"]
+      "params": ["/boot", "/dev/sda", "efi", "vanilla", true, "/dev/sda2"]
     },
     {
       "chroot": true,

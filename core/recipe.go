@@ -843,14 +843,18 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 	 * - *BootDirectory* (`string`): The path for the boot dir (usually `/boot`).
 	 * - *InstallDevice* (`string`): The disk where the boot partition is located.
 	 * - *Target* (`string`): The target firmware. Either `bios` for legacy systems or `efi` for UEFI systems.
+	 * - *EntryName* (`string`): Name of the boot entry.
+	 * - *Removable* (`bool`): Only relevant for EFI installations. If the drive is a removable (e.g. USB stick).
 	 * - *EFIDevice* (optional `string`): Only required for EFI installations. The partition where the EFI is located.
 	 */
 	case "grub-install":
 		bootDirectory := args[0].(string)
 		installDevice := args[1].(string)
 		target := args[2].(string)
+		entryName := args[3].(string)
+		removable := args[4].(bool)
 		efiDevice := ""
-		if len(args) > 3 {
+		if len(args) > 5 {
 			efiDevice = args[3].(string)
 		}
 		var grubTarget system.FirmwareType
@@ -862,7 +866,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		default:
 			return operationError(operation, "unrecognized firmware type: %s", target)
 		}
-		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, efiDevice)
+		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, entryName, removable, efiDevice)
 		if err != nil {
 			return operationError(operation, err)
 		}

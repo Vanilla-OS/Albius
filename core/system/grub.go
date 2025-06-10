@@ -97,7 +97,7 @@ func RemoveGrubScript(targetRoot, scriptName string) error {
 	return nil
 }
 
-func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareType, efiDevice ...string) error {
+func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareType, entryName string, removable bool, efiDevice ...string) error {
 	// Mount necessary targets for chroot
 	if targetRoot != "" {
 		requiredBinds := []string{"/dev", "/dev/pts", "/proc", "/sys", "/run"}
@@ -110,13 +110,20 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		}
 	}
 
-	grubInstallCmd := "grub-install --bootloader-id=debian --boot-directory %s --target=%s --uefi-secure-boot %s"
+	grubInstallCmd := "grub-install --no-nvram %s --bootloader-id=%s --boot-directory %s --target=%s --uefi-secure-boot %s"
+
+	removableStr := ""
+	if removable {
+		removableStr = "--removable"
+	}
+
+	command := fmt.Sprintf(grubInstallCmd, removableStr, entryName, bootDirectory, target, diskPath)
 
 	var err error
 	if targetRoot != "" {
-		err = util.RunInChroot(targetRoot, fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+		err = util.RunInChroot(targetRoot, command)
 	} else {
-		err = util.RunCommand(fmt.Sprintf(grubInstallCmd, bootDirectory, target, diskPath))
+		err = util.RunCommand(command)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to run grub-install: %s", err)
@@ -126,17 +133,15 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		return nil
 	}
 
-	// FIXME: This is needed on Vanilla due to some recent GRUB change. If you're using Debian sid as
-	// base, consider keeping it.
-	if target == EFI {
-		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=vanilla --loader=\"\\EFI\\debian\\shimx64.efi\""
+	if !removable && target == EFI {
+		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=%s --loader=\"\\EFI\\%s\\shimx64.efi\""
 		if len(efiDevice) == 0 || efiDevice[0] == "" {
 			return errors.New("EFI device was not specified")
 		}
 		diskName, part := util.SeparateDiskPart(efiDevice[0])
-		err = util.RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part))
+		err = util.RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part, entryName, entryName))
 		if err != nil {
-			return fmt.Errorf("failed to run grub-install: %s", err)
+			return fmt.Errorf("failed to run efibootmgr for grub-install: %s", err)
 		}
 	}
 

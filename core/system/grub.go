@@ -129,10 +129,6 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		return fmt.Errorf("failed to run grub-install: %s", err)
 	}
 
-	if targetRoot != "" {
-		return nil
-	}
-
 	if !removable && target == EFI {
 		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=%s --loader=\"\\EFI\\%s\\shimx64.efi\""
 		if len(efiDevice) == 0 || efiDevice[0] == "" {

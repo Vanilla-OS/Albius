@@ -855,7 +855,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		removable := args[4].(bool)
 		efiDevice := ""
 		if len(args) > 5 {
-			efiDevice = args[3].(string)
+			efiDevice = args[5].(string)
 		}
 		var grubTarget system.FirmwareType
 		switch target {

@@ -7,6 +7,9 @@ build:
 deb:
 	dpkg-buildpackage --no-sign
 
+deb-arm64:
+	dpkg-buildpackage --host-arch arm64 --no-check-builddeps --no-sign
+
 test:
 	sudo go test -v ./...
 

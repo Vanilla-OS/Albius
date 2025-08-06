@@ -23,7 +23,10 @@ jobs:
         rm -r /run/host${{ runner.tool_cache }}
 
     - name: Install needed packages
-      run: apt update && apt install dpkg-dev build-essential debhelper libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 dh-golang golang-go gcc pkg-config make  -y
+      run: |
+        dpkg --add-architecture arm64
+        apt update
+        apt install -y dh-golang golang-go libbtrfs-dev libdevmapper-dev libgpgme-dev lvm2 gcc-aarch64-linux-gnu libdevmapper-dev:arm64 pkgconf:arm64
 
     - name: Vendor dependencies
       run: go mod vendor
@@ -31,7 +34,11 @@ jobs:
     - name: Build debian package
       run: |
         make deb
-        mv ../*.deb ../albius.deb
+        rm -rf obj-x86_64-linux-gnu
+        apt install -y libgpgme-dev:arm64
+        make deb-arm64
+        mv ../albius_*_amd64.deb ./albius-amd64.deb
+        mv ../albius_*_arm64.deb ./albius-arm64.deb
 
     - uses: softprops/action-gh-release@v1
       with:
@@ -40,4 +47,4 @@ jobs:
         prerelease: true
         name: "Continuous Build"
         files: |
-          /__w/Albius/albius.deb
+          albius*.deb

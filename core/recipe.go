@@ -857,16 +857,7 @@ func runPostInstallOperation(chroot bool, operation string, args []interface{}) 
 		if len(args) > 5 {
 			efiDevice = args[5].(string)
 		}
-		var grubTarget system.FirmwareType
-		switch target {
-		case "bios":
-			grubTarget = system.BIOS
-		case "efi":
-			grubTarget = system.EFI
-		default:
-			return operationError(operation, "unrecognized firmware type: %s", target)
-		}
-		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, grubTarget, entryName, removable, efiDevice)
+		err := system.RunGrubInstall(targetRoot, bootDirectory, installDevice, target, entryName, removable, efiDevice)
 		if err != nil {
 			return operationError(operation, err)
 		}

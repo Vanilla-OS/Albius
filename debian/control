@@ -18,7 +18,7 @@ Vcs-Browser: https://github.com/vanilla-os/Albius
 Vcs-Git: git://github.com/vanilla-os/Albius.git
 
 Package: albius
-Architecture: all
+Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
          lvm2,

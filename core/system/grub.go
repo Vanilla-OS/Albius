@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/vanilla-os/albius/core/util"
@@ -12,12 +13,40 @@ import (
 
 type GrubConfig map[string]string
 
-const (
-	BIOS = "i386-pc"
-	EFI  = "x86_64-efi"
-)
+func GetGrubTarget(target string) (string, error) {
+	var grubTarget string
+	switch target {
+	case "bios":
+		grubTarget = "i386-pc"
+	case "efi":
+		arch := runtime.GOARCH
+		switch arch {
+		case "amd64":
+			grubTarget = "x86_64-efi"
+		case "arm64":
+			grubTarget = "arm64-efi"
+		default:
+			return "", fmt.Errorf("unsupported architecture: %s", arch)
+		}
+	default:
+		return "", fmt.Errorf("unrecognized firmware type: %s", target)
+	}
+	return grubTarget, nil
+}
 
-type FirmwareType string
+func GetEFIBootloaderFile() (string, error) {
+	arch := runtime.GOARCH
+	var bootloaderFile string
+	switch arch {
+	case "amd64":
+		bootloaderFile = "shimx64.efi"
+	case "arm64":
+		bootloaderFile = "shimaa64.efi"
+	default:
+		return "", fmt.Errorf("unsupported architecture: %s", arch)
+	}
+	return bootloaderFile, nil
+}
 
 func GetGrubConfig(targetRoot string) (GrubConfig, error) {
 	targetRootGrubFile := filepath.Join(targetRoot, "/etc/default/grub")
@@ -97,7 +126,7 @@ func RemoveGrubScript(targetRoot, scriptName string) error {
 	return nil
 }
 
-func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareType, entryName string, removable bool, efiDevice ...string) error {
+func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target string, entryName string, removable bool, efiDevice ...string) error {
 	// Mount necessary targets for chroot
 	if targetRoot != "" {
 		requiredBinds := []string{"/dev", "/dev/pts", "/proc", "/sys", "/run"}
@@ -117,9 +146,13 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		removableStr = "--removable"
 	}
 
-	command := fmt.Sprintf(grubInstallCmd, removableStr, entryName, bootDirectory, target, diskPath)
+	grubTarget, err := GetGrubTarget(target)
+	if err != nil {
+		return err
+	}
 
-	var err error
+	command := fmt.Sprintf(grubInstallCmd, removableStr, entryName, bootDirectory, grubTarget, diskPath)
+
 	if targetRoot != "" {
 		err = util.RunInChroot(targetRoot, command)
 	} else {
@@ -129,13 +162,20 @@ func RunGrubInstall(targetRoot, bootDirectory, diskPath string, target FirmwareT
 		return fmt.Errorf("failed to run grub-install: %s", err)
 	}
 
-	if !removable && target == EFI {
-		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=%s --loader=\"\\EFI\\%s\\shimx64.efi\""
+	if !removable && target == "efi" {
+		efibootmgrCmd := "efibootmgr --create --disk=%s --part=%s --label=%s --loader=\"\\EFI\\%s\\%s\""
 		if len(efiDevice) == 0 || efiDevice[0] == "" {
 			return errors.New("EFI device was not specified")
 		}
 		diskName, part := util.SeparateDiskPart(efiDevice[0])
-		err = util.RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part, entryName, entryName))
+
+		var bootloaderFile string
+		bootloaderFile, err = GetEFIBootloaderFile()
+		if err != nil {
+			return err
+		}
+
+		err = util.RunCommand(fmt.Sprintf(efibootmgrCmd, diskName, part, entryName, entryName, bootloaderFile))
 		if err != nil {
 			return fmt.Errorf("failed to run efibootmgr for grub-install: %s", err)
 		}

@@ -149,7 +149,14 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	}
 
 	storedImageName := strings.ReplaceAll(imageSource, "/", "-")
-	manifest, err := pmt.PullImage(imageSource, storedImageName)
+	var manifest *prometheus.OciManifest
+	// try multiple times in case of an unstable connection
+	for range 4 {
+		manifest, err = pmt.PullImage(imageSource, storedImageName)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("failed to pull OCI image: %s", err)
 	}

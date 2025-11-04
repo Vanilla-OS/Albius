@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	digest "github.com/opencontainers/go-digest"
 	"github.com/vanilla-os/albius/core/util"
 	"github.com/vanilla-os/prometheus"
 )
@@ -150,9 +151,10 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 
 	storedImageName := strings.ReplaceAll(imageSource, "/", "-")
 	var manifest *prometheus.OciManifest
+	var manifestDigest digest.Digest
 	// try multiple times in case of an unstable connection
 	for range 4 {
-		manifest, err = pmt.PullImage(imageSource, storedImageName)
+		manifest, manifestDigest, err = pmt.PullImage(imageSource, storedImageName)
 		if err == nil {
 			break
 		}
@@ -161,11 +163,12 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 		return fmt.Errorf("failed to pull OCI image: %s", err)
 	}
 
-	fmt.Printf("Image pulled with digest %s\n", manifest.Config.Digest)
+	id := manifest.Config.Digest.Encoded()
+	fmt.Printf("Image pulled with ID %s\n", id)
 
-	image, err := pmt.GetImageByDigest(manifest.Config.Digest)
+	image, err := pmt.GetImageById(id)
 	if err != nil {
-		return fmt.Errorf("failed to get image from digest: %s", err)
+		return fmt.Errorf("failed to get image by ID: %s", err)
 	}
 
 	mountPoint, err := pmt.MountImage(image.TopLayer)
@@ -212,7 +215,7 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	}
 
 	// Store the digest in destination as it may be used by the update manager
-	err = os.WriteFile(filepath.Join(destination, ".oci_digest"), []byte(manifest.Config.Digest), 0o644)
+	err = os.WriteFile(filepath.Join(destination, ".oci_digest"), []byte(manifestDigest), 0o644)
 	if err != nil {
 		return fmt.Errorf("failed to save digest in %s: %s", destination, err)
 	}

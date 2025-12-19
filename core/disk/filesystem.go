@@ -192,8 +192,7 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 		return fmt.Errorf("failed to sync image contents to %s: %s", destination, err)
 	}
 
-	// Remove storage from destination
-	err = util.RunCommand(fmt.Sprintf("umount -l %s/storage/graph/overlay", storagePath))
+	_, err = pmt.UnMountImage(image.TopLayer, true)
 	if err != nil {
 		return fmt.Errorf("failed to unmount image: %s", err)
 	}

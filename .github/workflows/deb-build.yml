@@ -8,7 +8,7 @@ jobs:
   deb-build:
     runs-on: ubuntu-22.04
     container:
-      image: ghcr.io/vanilla-os/pico:main
+      image: ghcr.io/vanilla-os/pico:dev
       volumes:
         - /proc:/proc
         - /:/run/host

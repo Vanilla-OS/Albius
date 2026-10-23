@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/vanilla-os/pico:main
+    container: ghcr.io/vanilla-os/pico:dev
 
     steps:
     - uses: actions/checkout@v4

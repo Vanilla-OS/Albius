@@ -187,9 +187,13 @@ func OCISetup(imageSource, storagePath, destination string, verbose bool) error 
 	} else {
 		verboseFlag = ""
 	}
-	err = util.RunCommand(fmt.Sprintf("rsync -a%sxHAX --numeric-ids %s/ %s/", verboseFlag, mountPoint, destination))
+	err = util.RunCommand(fmt.Sprintf("rsync -a%sxHAX --numeric-ids --exclude=/boot/ %s/ %s/", verboseFlag, mountPoint, destination))
 	if err != nil {
 		return fmt.Errorf("failed to sync image contents to %s: %s", destination, err)
+	}
+	err = util.RunCommand(fmt.Sprintf("rsync -a%sxHAX --numeric-ids %s/boot/ %s/boot/", verboseFlag, mountPoint, destination))
+	if err != nil {
+		return fmt.Errorf("failed to sync boot contents to %s/boot: %s", destination, err)
 	}
 
 	_, err = pmt.UnMountImage(image.TopLayer, true)
